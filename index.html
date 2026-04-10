@@ -1,0 +1,3575 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRI Management Dashboard</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind (used by modals/banners classes) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+        --primary-color: #2563eb;
+        --primary-hover: #1d4ed8;
+        --bg-color: #f7f9fb;
+        --surface-color: #ffffff;
+        --text-main: #1f2937;
+        --text-muted: #6b7280;
+        --border-color: #e5e7eb;
+
+        --status-pending-bg: #ecfdf5;
+        --status-pending-text: #059669;
+        --status-completed-bg: #ecfdf5;
+        --status-completed-text: #059669;
+        --status-inprogress-bg: #ecfdf5;
+        --status-inprogress-text: #059669;
+        --status-draft-bg: #f3f4f6;
+        --status-draft-text: #374151;
+
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+        --radius-md: 8px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+
+        --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Typography styles */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    a {
+        text-decoration: none;
+        color: inherit;
+        transition: var(--transition);
+    }
+
+    button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+        transition: var(--transition);
+    }
+
+    .input-field {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        font-family: 'Inter', sans-serif;
+        color: var(--text-main);
+        outline: none;
+        transition: var(--transition);
+    }
+
+    .input-field:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* Layout container */
+    .app-container {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Navbar */
+    .navbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 32px;
+        background-color: var(--surface-color);
+        border-bottom: 1px solid var(--border-color);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .brand-icon {
+        width: 28px;
+        height: 28px;
+        background-color: var(--primary-color);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .search-bar {
+        display: flex;
+        align-items: center;
+        background-color: #f3f4f6;
+        border-radius: var(--radius-md);
+        padding: 8px 16px;
+        width: 240px;
+        gap: 8px;
+        color: var(--text-muted);
+    }
+
+    .search-bar input {
+        border: none;
+        background: transparent;
+        width: 100%;
+        font-size: 14px;
+        outline: none;
+        color: var(--text-main);
+    }
+
+    .search-bar input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+
+    .nav-links a.active {
+        color: var(--primary-color);
+        position: relative;
+    }
+
+    .nav-links a.active::after {
+        content: '';
+        position: absolute;
+        bottom: -18px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--primary-color);
+        border-radius: 2px 2px 0 0;
+    }
+
+    .nav-links a:hover:not(.active) {
+        color: var(--text-main);
+    }
+
+    .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        background-color: transparent;
+        transition: var(--transition);
+    }
+
+    .icon-btn:hover {
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        transform: scale(1.05);
+    }
+
+    .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid white;
+        box-shadow: var(--shadow-sm);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .avatar:hover {
+        transform: scale(1.05);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Main Content */
+    .main-content {
+        flex: 1;
+        padding: 32px;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes spin {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 24px;
+    }
+
+    .page-title {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .page-title .subtitle {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .page-title h1 {
+        font-size: 28px;
+        letter-spacing: -0.02em;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+        color: white;
+        padding: 10px 20px;
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-color) 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-primary:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    }
+
+    /* Split Layout */
+    .grid-layout {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    /* Cards */
+    .card {
+        background-color: var(--surface-color);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+    }
+
+    .card:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Request Banner */
+    .request-banner {
+        background-color: var(--bg-color);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .request-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .request-info-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .request-info-top .badge {
+        background-color: #dbeafe;
+        color: #1e40af;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+    }
+
+    .request-info-top h3 {
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .request-info-meta {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .request-info-meta span {
+        font-weight: 500;
+        color: var(--text-main);
+    }
+
+    .btn-secondary {
+        color: var(--primary-color);
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border: 1px solid #bfdbfe;
+        background-color: #eff6ff;
+        border-radius: 6px;
+    }
+
+    .btn-secondary:hover {
+        background-color: #dbeafe;
+    }
+
+    /* Tab Toggle */
+    .tabs {
+        display: flex;
+        background-color: #f3f4f6;
+        border-radius: var(--radius-md);
+        padding: 4px;
+        margin-bottom: 24px;
+    }
+
+    .tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-muted);
+        border-radius: 6px;
+        transition: var(--transition);
+    }
+
+    .tab.active {
+        background-color: var(--surface-color);
+        color: var(--text-main);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab:hover:not(.active) {
+        color: var(--text-main);
+        background-color: #e5e7eb;
+    }
+
+    /* Drag and Drop Area */
+    .dropzone {
+        border: 2px dashed #cbd5e1;
+        border-radius: var(--radius-lg);
+        padding: 48px 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background-color: #f8fafc;
+        transition: var(--transition);
+        cursor: pointer;
+        margin-bottom: 24px;
+    }
+
+    .dropzone:hover {
+        border-color: var(--primary-color);
+        background-color: #eff6ff;
+    }
+
+    .dropzone-icon {
+        width: 48px;
+        height: 48px;
+        background-color: #dbeafe;
+        color: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        font-size: 24px;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.1);
+    }
+
+    .dropzone h4 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .dropzone p {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+    }
+
+    .btn-outline {
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+        background-color: transparent;
+        padding: 8px 16px;
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .btn-outline:hover {
+        background-color: #eff6ff;
+    }
+
+    /* Input Row */
+    .input-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .input-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-main);
+    }
+
+    /* Planning Calendar Details */
+    .calendar-card {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .calendar-card .card-title {
+        margin-bottom: 0;
+    }
+
+    .fieldset {
+        margin-bottom: 16px;
+    }
+
+    .fieldset label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        letter-spacing: 0.05em;
+    }
+
+    /* Custom Additions for Pattern Table */
+    .pattern-tasks {
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 1px 3px -1px rgba(0, 0, 0, 0.02);
+        border: 1px solid var(--border-color);
+    }
+
+    .pattern-tasks h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 4px;
+    }
+
+    .pattern-tasks .subtitle-text {
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .segmented-control {
+        display: flex;
+        background-color: #f3f4f6;
+        border-radius: 8px;
+        padding: 4px;
+    }
+
+    .segment {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .segment.active {
+        background-color: white;
+        color: var(--primary-color);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .export-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-main);
+        border-color: #e5e7eb;
+        font-weight: 600;
+    }
+
+    .export-btn:hover {
+        background-color: #8ceabb1a;
+        /* slight green tint */
+    }
+
+    /* Table Enhancements */
+    .pattern-tasks table {
+        margin-top: 16px;
+    }
+
+    .pattern-tasks th {
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .pattern-tasks td {
+        padding: 16px 20px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f9fafb;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11.5px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+
+    .pending-badge {
+        background-color: #ecfdf5;
+        color: #059669;
+    }
+
+    .success-badge {
+        background-color: #ecfdf5;
+        color: #059669;
+    }
+
+    .neutral-badge {
+        background-color: #f3f4f6;
+        color: #4b5563;
+    }
+
+    .danger-badge {
+        background-color: #fef2f2;
+        color: #dc2626;
+    }
+
+    .inprogress-badge {
+        background-color: #eff6ff;
+        color: #2563eb;
+    }
+
+    /* Actions */
+    .assign-btn {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+    }
+
+    .assign-btn:hover {
+        background-color: var(--primary-hover);
+    }
+
+    .details-link {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .details-link:hover {
+        text-decoration: underline;
+    }
+
+    .icon-btn-small {
+        color: var(--text-muted);
+        font-size: 18px;
+        line-height: 1;
+        padding: 0 4px;
+        font-weight: bold;
+    }
+
+    .icon-btn-small:hover {
+        color: var(--text-main);
+    }
+
+    .pattern-tasks tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .pattern-due-danger {
+        color: #dc2626;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Table footer pagination */
+    .pattern-footer-text {
+        color: #9ca3af;
+        font-size: 13px;
+    }
+
+    /* PM Assigned: full-width rows (table-like), not card tiles */
+    .pattern-gallery-grid {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        margin-top: 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        background: #fff;
+        overflow-x: auto;
+    }
+
+    .pattern-gallery-row {
+        display: grid;
+        grid-template-columns:
+            minmax(88px, 1fr) minmax(100px, 1.35fr) minmax(90px, 1fr) minmax(120px, 1.2fr) minmax(88px, 0.95fr) minmax(104px, 1fr) minmax(88px, 1fr) minmax(148px, auto);
+        gap: 12px 16px;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f9fafb;
+        font-size: 14px;
+    }
+
+    .pattern-gallery-row:last-child {
+        border-bottom: none;
+    }
+
+    .pattern-gallery-row--head {
+        background: #fafafa;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+    }
+
+    .pattern-gallery-row:not(.pattern-gallery-row--head):hover {
+        background: #f8fafc;
+    }
+
+    .pattern-gallery-cell {
+        min-width: 0;
+    }
+
+    .pattern-gallery-cell--id {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .pattern-gallery-cell--mute {
+        color: var(--text-muted);
+    }
+
+    .pattern-gallery-cell--truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pattern-gallery-cell--pl {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        color: var(--text-main);
+    }
+
+    .pattern-gallery-row__avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .pattern-gallery-row__actions {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .pattern-gallery-row__actions .btn-outline {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .pattern-gallery-row--head .pattern-gallery-row__actions {
+        text-align: center;
+    }
+
+    .pattern-gallery-empty {
+        padding: 48px 20px;
+        text-align: center;
+        color: #64748b;
+    }
+
+    .date-picker {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        font-size: 14px;
+        color: var(--text-main);
+        background: var(--bg-color);
+    }
+
+    .calendar-grid {
+        width: 100%;
+    }
+
+    .calendar-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .calendar-days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+    }
+
+    .cal-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        border-radius: 50%;
+        cursor: pointer;
+        color: var(--text-main);
+        transition: var(--transition);
+    }
+
+    .cal-day:hover:not(.empty) {
+        background-color: #f3f4f6;
+    }
+
+    .cal-day.empty {
+        cursor: default;
+    }
+
+    .cal-day.muted {
+        color: #d1d5db;
+    }
+
+    .cal-day.active {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    }
+
+    .cal-day.highlight {
+        background-color: #eff6ff;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .legend {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+
+    .legend-color {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+    }
+
+    .legend-color.blue {
+        background-color: var(--primary-color);
+    }
+
+    .legend-color.light-blue {
+        background-color: #bfdbfe;
+    }
+
+    /* Table Section */
+    .table-section {
+        background-color: var(--surface-color);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .table-header h2 {
+        font-size: 18px;
+    }
+
+    .btn-ghost {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+        padding: 8px 12px;
+        border-radius: var(--radius-md);
+    }
+
+    .btn-ghost:hover {
+        background-color: #f3f4f6;
+        color: var(--text-main);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        text-align: left;
+        padding: 12px 16px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+        padding: 16px;
+        font-size: 14px;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    tbody tr {
+        transition: var(--transition);
+    }
+
+    tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+    .req-id {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .style-name {
+        font-weight: 500;
+    }
+
+    .customer-name {
+        color: var(--text-muted);
+    }
+
+    .assignee {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .assignee-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11.5px;
+        font-weight: 600;
+        padding: 6px 14px;
+        border-radius: 20px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-badge.pending {
+        background-color: var(--status-pending-bg);
+        color: var(--status-pending-text);
+    }
+
+    .status-badge.completed {
+        background-color: var(--status-completed-bg);
+        color: var(--status-completed-text);
+    }
+
+    .status-badge.in-progress {
+        background-color: var(--status-inprogress-bg);
+        color: var(--status-inprogress-text);
+    }
+
+    .status-badge.draft {
+        background-color: var(--status-draft-bg);
+        color: var(--status-draft-text);
+    }
+
+    .action-btn {
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+    }
+
+    .action-btn:hover {
+        background-color: #e5e7eb;
+        color: var(--text-main);
+    }
+
+    .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 16px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .pagination {
+        display: flex;
+        gap: 8px;
+    }
+
+    .page-btn {
+        padding: 6px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        background: white;
+    }
+
+    .page-btn:hover:not(:disabled) {
+        border-color: #d1d5db;
+        color: var(--text-main);
+    }
+
+    .page-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* PRI-specific tweaks (keep minimal so Pattern layout matches screenshot) */
+
+    /* Ensure Tailwind overlays sit above the page */
+    #loading-overlay {
+        z-index: 100;
+    }
+
+    #request-details-modal {
+        z-index: 120;
+    }
+
+    /*
+ * PRI gallery rows only have 6 cells, but Pattern’s grid defines 8 columns.
+ * That left two empty tracks and wasted space on the right. Use a 6-column
+ * template so columns share the full gallery width.
+ */
+    #gallery-container.pattern-gallery-grid {
+        width: 100%;
+        max-width: 100%;
+        align-self: stretch;
+    }
+
+    #gallery-container .pattern-gallery-row {
+        width: 100%;
+        max-width: 100%;
+        grid-template-columns:
+            minmax(88px, 1fr) minmax(120px, 2.25fr) minmax(96px, 1.35fr) minmax(80px, 1fr) minmax(120px, 1.15fr) minmax(128px, 1.1fr);
+        column-gap: clamp(12px, 1.8vw, 28px);
+    }
+
+    #gallery-container .pattern-gallery-row>div {
+        min-width: 0;
+    }
+
+    #gallery-container .pattern-gallery-row>div:last-child {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    /* PRI modal Save: Tailwind CDN may not define `primary`; use explicit contrast */
+    .pri-modal-save-btn {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        color: #ffffff;
+        border: 1px solid #1d4ed8;
+        cursor: pointer;
+    }
+
+    .pri-modal-save-btn:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        border-color: #1e40af;
+    }
+
+    .pri-modal-save-btn .pri-save-btn__label {
+        color: #ffffff;
+    }
+
+    .pri-modal-save-btn svg,
+    .pri-modal-save-btn--complete svg {
+        stroke: #ffffff;
+    }
+
+    .pri-modal-save-btn--complete {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        border-color: #047857;
+    }
+
+    .pri-modal-save-btn--complete:hover {
+        background: linear-gradient(135deg, #047857 0%, #059669 100%);
+        border-color: #065f46;
+    }
+
+    /* Swap PRI form → success export step inside the same modal overlay */
+    #request-details-main-view.pri-modal-main--hidden {
+        display: none !important;
+    }
+
+    #request-details-success-view.pri-modal-success--visible {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: min(420px, 70vh);
+    }
+
+    /* —— PRI Calendar (month grid reference) —— */
+    .pri-calendar-wrap {
+        margin-bottom: 32px;
+    }
+
+    .pri-calendar-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        padding: 24px;
+    }
+
+    .pri-calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .pri-calendar-nav-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #2563eb;
+        background: #fff;
+        border: 1px solid #93c5fd;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+    }
+
+    .pri-calendar-nav-btn:hover {
+        background: #eff6ff;
+        border-color: #60a5fa;
+    }
+
+    .pri-calendar-month-title {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #111827;
+        text-align: center;
+        flex: 1;
+    }
+
+    .pri-calendar-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .pri-calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-auto-rows: minmax(96px, 1fr);
+        gap: 8px;
+        text-align: left;
+    }
+
+    .pri-cal-cell {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        min-height: 96px;
+        box-sizing: border-box;
+    }
+
+    .pri-cal-cell--muted {
+        background: #f9fafb;
+        color: #9ca3af;
+    }
+
+    .pri-cal-cell--day {
+        background: #ffffff;
+    }
+
+    .pri-cal-cell__num {
+        font-size: 12px;
+        font-weight: 600;
+        color: #9ca3af;
+        line-height: 1.2;
+    }
+
+    .pri-cal-cell__num--active {
+        color: #374151;
+    }
+
+    .pri-cal-day-badge {
+        margin-top: auto;
+        align-self: stretch;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-align: center;
+        cursor: pointer;
+        border: none;
+        background: #dbeafe;
+        color: #1d4ed8;
+        transition: opacity 0.15s, background 0.15s;
+    }
+
+    .pri-cal-day-badge:hover {
+        background: #bfdbfe;
+    }
+
+    .pri-cal-day-row {
+        padding: 10px 8px;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .pri-cal-day-row:last-child {
+        border-bottom: none;
+    }
+
+    .pri-cal-day-row__meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .pri-cal-day-row__id {
+        font-weight: 600;
+        color: var(--text-main, #111827);
+    }
+
+    .pri-cal-day-row__sub {
+        font-size: 12px;
+        color: var(--text-muted, #6b7280);
+    }
+
+    .pri-cal-day-row__time {
+        font-size: 11px;
+        color: #059669;
+        font-weight: 600;
+    }
+
+    /* Advanced Filter modal */
+    .pri-advanced-filter-modal {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+
+    .pri-advanced-filter-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 6px;
+    }
+
+    .pri-advanced-filter-input {
+        border: 1px solid #93c5fd;
+        color: #111827;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .pri-advanced-filter-input::placeholder {
+        color: #94a3b8;
+    }
+
+    .pri-advanced-filter-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    /* Filter combobox: search + dropdown */
+    .pri-filter-combobox__control {
+        position: relative;
+        display: flex;
+        align-items: stretch;
+    }
+
+    .pri-filter-combobox__input {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .pri-filter-combobox__toggle {
+        position: absolute;
+        right: 2px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: calc(100% - 6px);
+        max-height: 40px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .pri-filter-combobox__toggle:hover {
+        background: rgba(37, 99, 235, 0.08);
+    }
+
+    .pri-filter-combobox__toggle svg {
+        transition: transform 0.2s ease;
+    }
+
+    .pri-filter-combobox:has(.pri-filter-combobox__list:not(.hidden)) .pri-filter-combobox__toggle svg {
+        transform: rotate(180deg);
+    }
+
+    .pri-filter-combobox__list {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12);
+    }
+</style>
+
+<body>
+    <div class="app-container">
+        <!-- Top Navigation (Pattern layout) -->
+        <nav class="navbar">
+            <div class="nav-left">
+                <div class="brand">
+                    <div class="brand-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m4 10 8 8 8-8"></path>
+                            <path d="m4 6 8-4 8 4"></path>
+                        </svg>
+                    </div>
+                    PRI
+                </div>
+                <div class="search-bar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input id="nav-search" type="text" placeholder="Search Style or Customer..."
+                        oninput="handleNavSearch(this.value)" />
+                </div>
+                <div class="nav-links">
+                    <a href="https://costing-home.vercel.app/" id="nav-tab-dashboard" target="_self">Home</a>
+                    <a href="#" class="active" id="nav-tab-awaiting" onclick="navTabClick('Awaiting PRI')">Pending</a>
+                    <a href="#" id="nav-tab-complete" onclick="navTabClick('Complete')">Complete</a>
+                    <a href="#" id="nav-tab-calendar" onclick="navTabClick('Calendar')">Calendar</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <button class="icon-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                </button>
+                <img class="avatar" src="https://i.pravatar.cc/150?u=pri_user" alt="User" />
+            </div>
+        </nav>
+
+        <!-- Main Container -->
+        <main class="main-content" style="max-width: 1440px; padding: 40px 24px;">
+            <div id="app">
+                <div id="loading-overlay"
+                    class="hidden fixed inset-0 bg-white/50 backdrop-blur-[1px] z-[30000] flex items-center justify-center">
+                    <div class="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+
+                <!-- Optional banners (kept hidden; used by JS when needed) -->
+                <div id="config-banner" class="hidden mb-4 p-4 bg-[#EEF2FF] border border-[#C7D2FE] rounded-xl">
+                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                            <div class="text-[12px] font-extrabold text-primary uppercase tracking-wider">Configuration
+                            </div>
+                            <div class="text-[13px] font-medium text-[#495057]">Set the Google Apps Script Web App URL
+                                for PRI.</div>
+                        </div>
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <input id="config-url-input" type="text" placeholder="Paste Web App URL..."
+                                class="flex-1 md:w-[520px] px-3 py-2 border border-[#DEE2E6] rounded-lg text-[12px] bg-white outline-none" />
+                            <button onclick="saveConfigUrl()"
+                                class="px-4 py-2 bg-primary text-white rounded-lg font-bold text-[12px] hover:bg-secondary transition-colors">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="error-banner" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                    <div class="text-[12px] font-bold">Error</div>
+                    <div id="error-message" class="text-[12px]"></div>
+                </div>
+
+                <!-- Page Header (Pattern spacing) -->
+                <div class="page-header" style="margin-bottom: 24px;">
+                    <div class="page-title">
+                        <span class="subtitle"
+                            style="text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; font-size: 11px; font-weight: 700;">Production
+                            Hub</span>
+                        <h1 id="main-title" style="margin: 4px 0;">PRI</h1>
+                        <div id="stats-container"></div>
+                    </div>
+                </div>
+
+                <div class="pattern-tasks" id="pri-table-shell">
+                    <div id="table-container">
+                        <div class="table-header">
+                            <div>
+                                <h2 id="table-title">Active PRI Tasks</h2>
+                                <p class="subtitle-text" id="table-subtitle">Managing current production readiness items
+                                </p>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button class="btn-ghost" onclick="toggleFilter(true)"
+                                    style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #64748b;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                                    </svg>
+                                    Filter Data
+                                </button>
+                                <button class="btn-outline export-btn" onclick="exportToExcel()" type="button">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Export
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="gallery-container" class="pattern-gallery-grid" style="display:none;"></div>
+
+                        <div id="pri-table-surface">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>C_Number</th>
+                                        <th>Title</th>
+                                        <th>Customer</th>
+                                        <th>Dept</th>
+                                        <th>Status</th>
+                                        <th style="text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="table-footer" style="padding-top: 16px; margin-top: 8px;">
+                            <span class="pattern-footer-text" id="pagination-info">Showing items</span>
+                            <div class="pagination">
+                                <button class="page-btn" disabled>&lt;</button>
+                                <button class="page-btn">&gt;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar -->
+                <div class="pri-calendar-wrap calendar-section" id="calendar-section" style="display: none;">
+                    <div class="pri-calendar-card">
+                        <div class="pri-calendar-header">
+                            <button type="button" class="pri-calendar-nav-btn" id="cal-prev-btn"
+                                onclick="changeMonth(-1)">&lt; Previous</button>
+                            <h2 id="cal-month-title" class="pri-calendar-month-title">Month Year</h2>
+                            <button type="button" class="pri-calendar-nav-btn" id="cal-next-btn"
+                                onclick="changeMonth(1)">Next &gt;</button>
+                        </div>
+                        <div class="pri-calendar-weekdays">
+                            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                        </div>
+                        <div id="calendar-grid" class="pri-calendar-grid" aria-label="Calendar month grid"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals (Re-using original structure for logic parity) -->
+    <div id="request-details-modal"
+        class="hidden fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div
+            class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
+            <div id="request-details-main-view" class="flex flex-col min-h-0 flex-1">
+                <div
+                    class="p-5 border-b border-[#F1F3F5] flex items-center justify-between gap-3 bg-[#F8F9FA] shrink-0">
+                    <h3 id="request-details-title" class="text-lg font-bold text-[#212529] min-w-0 truncate pr-2">
+                        Request Details</h3>
+                    <button type="button" onclick="toggleRequestDetails(false)"
+                        class="p-2 text-[#ADB5BD] hover:text-[#495057] hover:bg-white rounded-lg transition-all"
+                        aria-label="Close dialog">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="p-5 space-y-5 max-h-[min(70vh,720px)] overflow-y-auto custom-scrollbar">
+                    <div id="request-details-content"></div>
+                    <div id="pri-calculation-section">
+                        <div class="text-[11px] font-extrabold text-[#6C757D] uppercase tracking-[0.12em] mb-3">PRI
+                            Calculation</div>
+                        <div id="pri-calculation-rows" class="space-y-3"></div>
+                        <button type="button" onclick="addPRIDetailRow()"
+                            class="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#DEE2E6] rounded-lg text-[12px] font-semibold text-[#6C757D] hover:border-primary hover:text-primary hover:bg-[#EEF2FF] transition-all mt-3">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Row
+                        </button>
+                        <div
+                            class="flex items-center justify-between mt-4 p-4 bg-[#F8F9FA] rounded-xl border border-[#E9ECEF]">
+                            <span class="text-[13px] font-bold text-[#495057]">Total Minutes</span>
+                            <span id="pri-details-total" class="text-2xl font-black text-primary tabular-nums">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="pri-action-buttons"
+                    class="p-5 bg-white border-t border-[#F1F3F5] flex flex-wrap justify-end items-center gap-3 shrink-0">
+                    <button type="button" onclick="toggleRequestDetails(false)"
+                        class="px-6 py-2.5 bg-white border border-[#E9ECEF] text-[#495057] rounded-xl font-bold hover:bg-[#F8F9FA] transition-all active:scale-95 text-sm shrink-0">
+                        Close
+                    </button>
+                    <div id="pri-footer-save-wrap">
+                        <button type="button" onclick="saveAndExportPRI()" id="pri-save-btn"
+                            aria-label="Save PRI details"
+                            class="pri-modal-save-btn px-7 py-2.5 rounded-xl font-extrabold text-sm inline-flex items-center justify-center gap-2 shrink-0 shadow-md transition-all active:scale-95">
+                            <i data-lucide="save" class="w-4 h-4 shrink-0 pri-modal-save-icon" aria-hidden="true"></i>
+                            <span class="pri-save-btn__label whitespace-nowrap">Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="request-details-success-view"
+                class="hidden w-full flex flex-col items-center justify-center px-6 py-10 sm:px-10 text-center flex-1 min-h-0 overflow-y-auto">
+                <div class="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-5 shrink-0">
+                    <i data-lucide="check-circle-2" class="w-9 h-9 text-emerald-600 stroke-[2.5]"></i>
+                </div>
+                <h3 class="text-xl font-bold text-[#212529] mb-2">PRI Details Saved!</h3>
+                <p class="text-sm text-[#6C757D] mb-8 leading-relaxed max-w-md">
+                    Your calculation has been saved. Choose an export format to complete the request and notify the
+                    requester.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3 w-full max-w-lg">
+                    <button type="button" onclick="exportAndComplete('excel')"
+                        class="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-700 text-white font-bold text-sm hover:bg-emerald-800 transition-all shadow-sm">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4 shrink-0"></i>
+                        Export as Excel
+                    </button>
+                    <button type="button" onclick="exportAndComplete('pdf')"
+                        class="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all shadow-sm">
+                        <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
+                        Export as PDF
+                    </button>
+                </div>
+                <button type="button" onclick="dismissPriSavedSuccess()"
+                    class="mt-8 text-sm font-medium text-[#94a3b8] hover:text-[#64748b] transition-colors">
+                    Maybe Later
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Filter modal -->
+    <div id="filter-sidebar"
+        class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+        onclick="cancelFilter()">
+        <div id="filter-panel"
+            class="pri-advanced-filter-modal bg-white rounded-xl shadow-xl w-full max-w-md max-h-[min(92vh,640px)] overflow-y-auto overflow-x-hidden flex flex-col"
+            onclick="event.stopPropagation()">
+            <div class="px-6 pt-6 pb-2">
+                <h2 class="text-lg font-bold text-[#111827]">Advanced Filter</h2>
+            </div>
+            <div class="px-6 py-4 space-y-5 overflow-visible">
+                <div class="pri-filter-combobox searchable-dropdown relative">
+                    <label class="pri-advanced-filter-label" for="filter-number">Request ID</label>
+                    <div class="pri-filter-combobox__control">
+                        <input id="filter-number" type="text" autocomplete="off" role="combobox"
+                            aria-autocomplete="list" onfocus="showDropdown('number')" oninput="filterDropdown('number')"
+                            class="pri-filter-combobox__input pri-advanced-filter-input w-full pl-3 pr-10 py-2.5 rounded-lg text-[13px] outline-none bg-white"
+                            placeholder="Type to search or open the list…" />
+                        <button type="button" class="pri-filter-combobox__toggle" aria-label="Open list"
+                            onclick="toggleFilterDropdownBtn('number', event)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="options-number"
+                        class="pri-filter-combobox__list hidden absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-auto border border-[#E5E7EB] rounded-lg bg-white shadow-lg">
+                    </div>
+                </div>
+                <div class="pri-filter-combobox searchable-dropdown relative">
+                    <label class="pri-advanced-filter-label" for="filter-style">Style name</label>
+                    <div class="pri-filter-combobox__control">
+                        <input id="filter-style" type="text" autocomplete="off" role="combobox" aria-autocomplete="list"
+                            onfocus="showDropdown('style')" oninput="filterDropdown('style')"
+                            class="pri-filter-combobox__input pri-advanced-filter-input w-full pl-3 pr-10 py-2.5 rounded-lg text-[13px] outline-none bg-white"
+                            placeholder="Type to search or open the list…" />
+                        <button type="button" class="pri-filter-combobox__toggle" aria-label="Open list"
+                            onclick="toggleFilterDropdownBtn('style', event)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="options-style"
+                        class="pri-filter-combobox__list hidden absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-auto border border-[#E5E7EB] rounded-lg bg-white shadow-lg">
+                    </div>
+                </div>
+                <div class="pri-filter-combobox searchable-dropdown relative">
+                    <label class="pri-advanced-filter-label" for="filter-customer">Customer</label>
+                    <div class="pri-filter-combobox__control">
+                        <input id="filter-customer" type="text" autocomplete="off" role="combobox"
+                            aria-autocomplete="list" onfocus="showDropdown('customer')"
+                            oninput="filterDropdown('customer')"
+                            class="pri-filter-combobox__input pri-advanced-filter-input w-full pl-3 pr-10 py-2.5 rounded-lg text-[13px] outline-none bg-white"
+                            placeholder="Type to search or open the list…" />
+                        <button type="button" class="pri-filter-combobox__toggle" aria-label="Open list"
+                            onclick="toggleFilterDropdownBtn('customer', event)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="options-customer"
+                        class="pri-filter-combobox__list hidden absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-auto border border-[#E5E7EB] rounded-lg bg-white shadow-lg">
+                    </div>
+                </div>
+                <div class="pri-filter-combobox searchable-dropdown relative">
+                    <label class="pri-advanced-filter-label" for="filter-pmPl">PM name / PL name</label>
+                    <div class="pri-filter-combobox__control">
+                        <input id="filter-pmPl" type="text" autocomplete="off" role="combobox" aria-autocomplete="list"
+                            onfocus="showDropdown('pmPl')" oninput="filterDropdown('pmPl')"
+                            class="pri-filter-combobox__input pri-advanced-filter-input w-full pl-3 pr-10 py-2.5 rounded-lg text-[13px] outline-none bg-white"
+                            placeholder="Type to search or open the list…" />
+                        <button type="button" class="pri-filter-combobox__toggle" aria-label="Open list"
+                            onclick="toggleFilterDropdownBtn('pmPl', event)">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m6 9 6 6 6-6" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="options-pmPl"
+                        class="pri-filter-combobox__list hidden absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-auto border border-[#E5E7EB] rounded-lg bg-white shadow-lg">
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-5 flex justify-end gap-3 border-t border-[#F1F3F5] bg-[#FAFBFC]">
+                <button type="button" onclick="cancelFilter()"
+                    class="pri-advanced-filter-btn-cancel px-5 py-2.5 rounded-lg text-[13px] font-semibold border border-[#93C5FD] text-[#2563EB] bg-white hover:bg-[#EFF6FF] transition-colors">
+                    Cancel
+                </button>
+                <button type="button" onclick="applyFilters()"
+                    class="pri-advanced-filter-btn-apply px-5 py-2.5 rounded-lg text-[13px] font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] shadow-md transition-colors">
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Day Requests Modal -->
+    <div class="modal" id="calendar-day-modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 15000; justify-content: center; align-items: center;">
+        <div class="card"
+            style="width: 400px; padding: 24px; background: white; border-radius: 8px; max-height: 80vh; overflow-y: auto;">
+            <h3 id="calendar-day-title"
+                style="margin-bottom: 16px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">
+                Requests for Date</h3>
+            <div id="calendar-day-content" style="line-height: 1.6; font-size: 14px; margin-bottom: 24px;">
+                <!-- Populated via JS -->
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+                <button class="btn-secondary" id="close-calendar-day-btn"
+                    onclick="document.getElementById('calendar-day-modal').style.display='none'"
+                    style="padding: 8px 16px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications (non-blocking, auto-dismiss) -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[25000] space-y-2"></div>
+
+    <script>
+        // State Management
+        let state = {
+            data: [],
+            isLoading: false,
+            activeTab: 'Awaiting PRI',
+            isFilterOpen: false,
+            selectedRequest: null,
+            filterValues: { number: '', style: '', customer: '', pmPl: '' },
+            filterOptions: { number: [], style: [], customer: [], pmPl: [] },
+            priDetails: [{ detail: '', minutes: 0 }],
+            fetchError: null,
+            selectedFileUrl: null,
+            isSaved: true,
+            currentCalendarDate: new Date(),
+            GOOGLE_SHEET_URL: localStorage.getItem('PRI_DASHBOARD_URL') || 'https://script.google.com/macros/s/AKfycbzSdyx3uNKZPhbhwg_eIc_VmRTvUNF8-Q5z9hunbr7seSuz2nNdO-awDI8qserEQHkr/exec?sheet=PRI',
+            SHAREPOINT_URL: localStorage.getItem('SHAREPOINT_URL') || 'https://tklmu.sharepoint.com/sites/NewEraUSA/PNG/Forms/AllItems.aspx?id=%2Fsites%2FNewEraUSA%2FPNG%2FTesting&viewid=6536443e%2D10df%2D4c19%2D92e8%2Dfde89c026737'
+        };
+        let calCurrentDate = new Date();
+
+        try {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+            fetchData();
+            updateStats();
+            renderTable();
+        } catch (e) {
+            document.body.innerHTML = '<h1>INITIALIZATION ERROR</h1><pre>' + e.stack + '</pre>';
+        }
+
+        // Export functions to window for HTML access
+        window.fetchData = fetchData;
+        window.setActiveTab = setActiveTab;
+        window.toggleFilter = toggleFilter;
+        window.applyFilters = applyFilters;
+        window.clearFilters = clearFilters;
+        window.cancelFilter = cancelFilter;
+        window.openRequestDetailsModal = openRequestDetailsModal;
+        window.toggleRequestDetails = toggleRequestDetails;
+        window.addPRIDetailRow = addPRIDetailRow;
+        window.removePRIDetailRow = removePRIDetailRow;
+        window.updatePRIDetailRow = updatePRIDetailRow;
+        window.savePRIDetails = savePRIDetails;
+        window.exportAndComplete = exportAndComplete;
+        window.downloadPRIReport = downloadPRIReport;
+        window.exportToExcel = exportToExcel;
+        window.exportToPDF = exportToPDF;
+        window.savePRI = savePRI;
+        window.saveAndExportPRI = saveAndExportPRI;
+        window.dismissPriSavedSuccess = dismissPriSavedSuccess;
+        window.saveConfigUrl = saveConfigUrl;
+        window.showDropdown = showDropdown;
+        window.filterDropdown = filterDropdown;
+        window.selectOption = selectOption;
+        window.toggleFilterDropdownBtn = toggleFilterDropdownBtn;
+        window.changeMonth = changeMonth;
+        window.toggleCalendarModal = toggleCalendarModal;
+        window.openDayDetails = openDayDetails;
+        window.navTabClick = navTabClick;
+        window.handleNavSearch = handleNavSearch;
+
+        function showToast(message, variant = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const colors = {
+                success: { bg: 'bg-[#ECFDF5]', border: 'border-[#A7F3D0]', text: 'text-[#065F46]', icon: 'check-circle-2' },
+                error: { bg: 'bg-[#FEF2F2]', border: 'border-[#FECACA]', text: 'text-[#991B1B]', icon: 'alert-circle' },
+                info: { bg: 'bg-[#EEF2FF]', border: 'border-[#C7D2FE]', text: 'text-primary', icon: 'info' }
+            };
+            const c = colors[variant] || colors.success;
+
+            const el = document.createElement('div');
+            el.className = `${c.bg} ${c.border} ${c.text} border shadow-md rounded-xl px-4 py-3 flex items-start gap-3 min-w-[260px] max-w-[360px]`;
+            el.innerHTML = `
+        <div class="mt-0.5"><i data-lucide="${c.icon}" class="w-4 h-4"></i></div>
+        <div class="text-[12px] font-bold leading-snug flex-1">${String(message || '').replace(/</g, '&lt;')}</div>
+        <button class="text-[#6C757D] hover:text-[#212529] -mt-0.5" aria-label="Close">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+    `;
+            container.appendChild(el);
+            const closeBtn = el.querySelector('button');
+            if (closeBtn) closeBtn.addEventListener('click', () => el.remove());
+            if (window.lucide) window.lucide.createIcons();
+
+            setTimeout(() => {
+                if (el && el.parentNode) el.remove();
+            }, 2500);
+        }
+
+        // Nav bar helpers
+        function navTabClick(tab) {
+            if (tab === 'Calendar') {
+                toggleCalendarModal(true);
+                return;
+            }
+
+            // If we were on Calendar, close it and restore table shell
+            toggleCalendarModal(false);
+
+            // Update active state on nav buttons
+            const map = {
+                'Dashboard': 'nav-tab-dashboard',
+                'Awaiting PRI': 'nav-tab-awaiting',
+                'Complete': 'nav-tab-complete',
+            };
+            Object.values(map).forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.className = 'px-4 py-1.5 text-[13px] font-medium rounded-lg transition-all hover:bg-[#EEF2FF] hover:text-primary text-[#6C757D]';
+            });
+            const activeId = map[tab];
+            if (activeId) {
+                const activeBtn = document.getElementById(activeId);
+                if (activeBtn) activeBtn.className = 'px-4 py-1.5 text-[13px] font-semibold rounded-lg bg-[#EEF2FF] text-primary';
+            }
+            setActiveTab(tab);
+        }
+
+        function handleNavSearch(query) {
+            if (!query.trim()) {
+                state.filterValues.number = '';
+                state.filterValues.customer = '';
+            } else {
+                state.filterValues.number = query.trim();
+                state.filterValues.customer = query.trim();
+            }
+            renderTable();
+        }
+
+        // Helper: Parse Date
+        function parseDateString(dateStr) {
+            if (!dateStr || String(dateStr).trim() === '-') return new Date(NaN);
+            if (dateStr instanceof Date) return dateStr;
+
+            const str = String(dateStr).trim();
+            if (!str) return new Date(NaN);
+
+            const yearToMatch = calCurrentDate.getFullYear();
+            const monthToMatch = calCurrentDate.getMonth();
+
+            const tryDate = (y, m, d) => {
+                const date = new Date(y, m, d);
+                return (!isNaN(date.getTime()) && date.getFullYear() === y && date.getMonth() === m && date.getDate() === d) ? date : null;
+            };
+
+            let day, month, year;
+            const dmyMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+            const isoMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+
+            if (dmyMatch) {
+                day = parseInt(dmyMatch[1], 10);
+                month = parseInt(dmyMatch[2], 10) - 1;
+                year = parseInt(dmyMatch[3], 10);
+            } else if (isoMatch) {
+                year = parseInt(isoMatch[1], 10);
+                month = parseInt(isoMatch[2], 10) - 1;
+                day = parseInt(isoMatch[3], 10);
+            } else {
+                const nativeDate = new Date(str);
+                if (!isNaN(nativeDate.getTime())) {
+                    day = nativeDate.getDate();
+                    month = nativeDate.getMonth();
+                    year = nativeDate.getFullYear();
+                }
+            }
+
+            if (year !== undefined) {
+                if (day <= 12 && month < 12) {
+                    const d1 = tryDate(year, month, day);
+                    const d2 = tryDate(year, day - 1, month + 1);
+                    if (d1 && d1.getFullYear() === yearToMatch && d1.getMonth() === monthToMatch) return d1;
+                    if (d2 && d2.getFullYear() === yearToMatch && d2.getMonth() === monthToMatch) {
+                        console.log(`[DATE RECOVERY] Swapped Month/Day to match current view: ${str} -> ${d2.toDateString()}`);
+                        return d2;
+                    }
+                    return d1 || d2 || new Date(NaN);
+                }
+                return tryDate(year, month, day) || new Date(NaN);
+            }
+            return new Date(NaN);
+        }
+
+        function normalizePRIStatus(statusVal) {
+            const s = String(statusVal || '').trim();
+            if (!s) return 'Awaiting PRI';
+            const up = s.toUpperCase();
+            if (up.includes('COMPLETE')) return 'Complete';
+            if (up.includes('OVERDUE')) return 'Overdue';
+            if (up.includes('AWAITING')) return 'Awaiting PRI';
+            return s;
+        }
+
+        /** First non-empty status string from row + nested `raw` (Apps Script often sends blank top-level `status`). */
+        function pickPriStatusRaw(item) {
+            if (!item || typeof item !== 'object') return '';
+            const keys = ['pri_status', 'status_pri', 'pri_overall_status', 'overall_status', 'pri_state', 'status'];
+            for (const k of keys) {
+                const v = item[k];
+                if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+            }
+            const nested = item.raw;
+            if (nested && typeof nested === 'object') {
+                const v = nested.Status ?? nested.status;
+                if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+            }
+            return '';
+        }
+
+        function pickPlUploadedDate(item) {
+            if (!item || typeof item !== 'object') return '';
+            const keys = ['pl_uploaded_date', 'PL_Uploaded_Date', 'pl_date'];
+            for (const k of keys) {
+                const v = item[k];
+                if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+            }
+            const nested = item.raw;
+            if (nested && typeof nested === 'object') {
+                const v = nested['PL_Uploaded_Date'] ?? nested.PL_Uploaded_Date;
+                if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+            }
+            return '';
+        }
+
+        function getEffectivePRIStatus(item) {
+            let effectiveStatus = getPriSheetStatus(item);
+
+            // If backend has a completion timestamp, treat as complete for UI consistency.
+            if (item.completed_at) effectiveStatus = 'Complete';
+
+            // Overdue logic (only applies to awaiting items).
+            const plDate = pickPlUploadedDate(item);
+            if (effectiveStatus === 'Awaiting PRI' && plDate) {
+                const uploadDate = parseDateString(plDate);
+                if (!isNaN(uploadDate.getTime())) {
+                    const now = new Date();
+                    if ((now.getTime() - uploadDate.getTime()) > (24 * 60 * 60 * 1000)) {
+                        effectiveStatus = 'Overdue';
+                    }
+                }
+            }
+            return effectiveStatus;
+        }
+
+        function getPriSheetStatus(item) {
+            if (!item || typeof item !== 'object') return '';
+            return normalizePRIStatus(pickPriStatusRaw(item));
+        }
+
+        /** Google Apps Script may return a bare array or an object wrapper. */
+        function extractRecordArray(json) {
+            if (Array.isArray(json)) return json;
+            if (json && typeof json === 'object') {
+                if (Array.isArray(json.data)) return json.data;
+                if (Array.isArray(json.rows)) return json.rows;
+                if (Array.isArray(json.records)) return json.records;
+                if (Array.isArray(json.result)) return json.result;
+            }
+            return null;
+        }
+
+        function pickField(item, aliases, fallback = '') {
+            if (!item || typeof item !== 'object') return fallback;
+            for (const key of aliases) {
+                const v = item[key];
+                if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+            }
+            return fallback;
+        }
+
+        function buildPriFolderUrl(item) {
+            if (!item || typeof item !== 'object') return state.SHAREPOINT_URL;
+            // Support multiple possible keys from backend normalization
+            return item.folderlink || item.folder_path || item.folder_link || state.SHAREPOINT_URL;
+        }
+
+        function escapeHtmlText(s) {
+            return String(s ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function escapeHtmlAttr(s) {
+            return String(s ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;');
+        }
+
+        function escapeHtmlAttr(s) {
+            return String(s ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;');
+        }
+
+        /**
+         * Photo-style request detail card: fields + Folder Path with "Open Folder" link (no top SharePoint banner).
+         * @param {object} options.showPriExtras — include PRI Uploaded / Overdue / Due / Total Minutes (Complete view).
+         */
+        function buildPriRequestDetailsCardHtml(item, options = {}) {
+            const { statusValue, showPriExtras = false, extraRows = [] } = options;
+            const url = buildPriFolderUrl(item);
+            const status = statusValue != null ? statusValue : getEffectivePRIStatus(item);
+
+            const val = (v) => escapeHtmlText(v === undefined || v === null || String(v).trim() === '' ? '—' : v);
+
+            const row = (label, valueHtml) => `
+        <div class="flex items-start justify-between py-3 gap-4">
+            <span class="text-[13px] font-medium text-[#6C757D] shrink-0">${escapeHtmlText(label)}</span>
+            <span class="text-[13px] font-bold text-[#212529] text-right ml-4 break-words">${valueHtml}</span>
+        </div>`;
+
+            const rowPlain = (label, value) => row(label, val(value));
+            const rowStatus = (label, value) => row(label, `<span class="font-extrabold">${val(value)}</span>`);
+
+            const tkl = pickField(item, ['tkl_season', 'tkl_season_', 'season', 'TKL_Season', 'tkl season'], '');
+            const mainFab = pickField(item, ['main_fabric', 'main_fabric_', 'Main_Fabric', 'main fabric'], '');
+            const fabHdr = pickField(item, ['fabric_header', 'fabric_header_', 'Fabric Header', 'fabric header'], '');
+            const plNm = pickField(item, ['pl_name', 'PL_Name', 'PL_name', 'Pl_Name', 'assignee', 'pm_name', 'PM_Name'], '');
+
+            let inner = '';
+            inner += rowPlain('Request ID', pickField(item, ['c_number', 'C_Number', 'request_id'], item.c_number || '—'));
+            inner += rowPlain('Customer', pickField(item, ['customer', 'cust_name', 'Customer'], '—'));
+            inner += rowPlain('Cus Dept', pickField(item, ['cust_dept', 'dept', 'cus_dept', 'Cus_Dept'], '—'));
+            inner += rowPlain('TKL Season', tkl || '—');
+            inner += rowPlain('Main Fabric', mainFab || '—');
+            inner += rowPlain('Fabric Header', fabHdr || '—');
+            inner += rowPlain('PL Name', plNm || '—');
+
+            if (showPriExtras) {
+                inner += rowPlain('Total Minutes', item.total_minutes != null ? String(item.total_minutes) : '0');
+            }
+
+            inner += rowStatus('Status', status);
+
+            inner += rowPlain('Created By', typeof item.created_by === 'object' ? (item.created_by?.name || item.created_by?.email || '—') : (item.created_by || '—'));
+
+            inner += `
+        <div class="flex items-start justify-between py-3 gap-4">
+            <span class="text-[13px] font-medium text-[#6C757D] shrink-0">Folder Path</span>
+            <a href="${escapeHtmlAttr(url)}" target="_blank" rel="noopener noreferrer" class="text-[13px] font-bold text-primary underline hover:text-primary/80 shrink-0 text-right">Open Folder</a>
+        </div>`;
+
+            extraRows.forEach(({ label, value }) => {
+                inner += rowPlain(label, value);
+            });
+
+            return `
+        <div class="space-y-0 divide-y divide-[#F1F3F5] bg-white rounded-xl border border-[#E9ECEF] px-4 py-1">
+            ${inner}
+        </div>`;
+        }
+
+        function buildPriDownloadButtonsHtml() {
+            return `
+        <div class="flex flex-col sm:flex-row gap-3 mt-6">
+            <button type="button" onclick="downloadPRIReport('excel')" class="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-700 text-white font-bold text-sm hover:bg-emerald-800 transition-all shadow-sm">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 shrink-0"></i>
+                Download Excel
+            </button>
+            <button type="button" onclick="downloadPRIReport('pdf')" class="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all shadow-sm">
+                <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
+                Download PDF
+            </button>
+        </div>`;
+        }
+
+        function matchesTabByPriStatus(item, activeTab) {
+            const rawStatus = getPriSheetStatus(item);
+            const effectiveStatus = getEffectivePRIStatus(item || {});
+
+            if (activeTab === 'Awaiting PRI') {
+                return rawStatus === 'Awaiting PRI';
+            }
+            if (activeTab === 'Complete') {
+                return rawStatus === 'Complete' || Boolean(item?.completed_at);
+            }
+            return effectiveStatus === activeTab;
+        }
+
+        /** Date used to place a row on the calendar (Save timestamp preferred). */
+        /** Date used to place a row on the calendar (PRI Uploaded Date for completed items). */
+        function getCalendarRecordDate(item) {
+            if (!item || typeof item !== 'object') return null;
+            // The user wants to see completed items based on PRI_Uploaded_Date
+            const raw = item.pri_uploaded_date || item.completed_at || item.pri_last_saved_at;
+            const d = parseDateString(raw);
+            return d && !isNaN(d.getTime()) ? d : null;
+        }
+
+        function getTimeElapsed(date) {
+            const now = new Date();
+            const diff = now.getTime() - date.getTime();
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            if (hours < 24) return `${hours} hours ago`;
+            const days = Math.floor(hours / 24);
+            return `${days} days ago`;
+        }
+
+        function getEmailFromCreatedBy(createdBy) {
+            if (!createdBy) return 'canteentropic@gmail.com';
+            if (typeof createdBy === 'object') {
+                return createdBy.email || createdBy.emailAddress || 'canteentropic@gmail.com';
+            }
+            const str = String(createdBy);
+            const match = str.match(/<(.+?)>/);
+            if (match) return match[1];
+            if (str.includes('@')) return str;
+            return 'canteentropic@gmail.com';
+        }
+
+        function saveConfigUrl() {
+            const inputUrl = document.getElementById('config-url-input').value.trim();
+            if (!inputUrl) {
+                alert("Please enter a valid URL.");
+                return;
+            }
+            localStorage.setItem('PRI_DASHBOARD_URL', inputUrl);
+            state.GOOGLE_SHEET_URL = inputUrl;
+            document.getElementById('config-banner').classList.add('hidden');
+            fetchData();
+        }
+
+        // Fetch Data
+        async function fetchData(hasRetried = false) {
+            if (!state.GOOGLE_SHEET_URL) {
+                document.getElementById('config-banner').classList.remove('hidden');
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+
+            try {
+                const FALLBACK_GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxMVYOSwIwbUchXuqOeH_r5h7Zxu1AWH4WkvxGHciuVYz1a-N2OOrtagBqCbTyRSgdjHA/exec?sheet=PRI';
+                let baseUrl = state.GOOGLE_SHEET_URL.trim();
+                // Ensure we always request the merged PRI dataset.
+                if (!baseUrl.includes('sheet=')) {
+                    baseUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}sheet=PRI`;
+                }
+                const urlWithParams = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+
+                const response = await fetch(urlWithParams, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                // If the stored URL is an old/invalid deployment, it often returns 404 HTML.
+                // In that case, automatically switch to the known-good backend and retry once.
+                if (response.status === 404) {
+                    if (!hasRetried && baseUrl !== FALLBACK_GOOGLE_SHEET_URL) {
+                        state.GOOGLE_SHEET_URL = FALLBACK_GOOGLE_SHEET_URL;
+                        localStorage.setItem('PRI_DASHBOARD_URL', FALLBACK_GOOGLE_SHEET_URL);
+                        return fetchData(true);
+                    }
+                    throw new Error('PRI backend URL returned 404. Update PRI_DASHBOARD_URL / clear config and reload.');
+                }
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const result = await response.json();
+                console.log('Result received from backend:', result);
+                const records = extractRecordArray(result);
+                console.log('Records extracted:', records ? records.length : 0);
+
+                if (records) {
+                    state.data = records.map(item => {
+                        let processed = { ...item };
+                        // Normalize keys from Google Sheet (e.g., "PRI_Name" -> "pri_name")
+                        Object.keys(item).forEach(key => {
+                            const normalizedKey = key.toLowerCase().replace(/\s+/g, '_');
+                            processed[normalizedKey] = item[key];
+                        });
+                        // Ensure c_number is available from common aliases
+                        const idCandidate = processed.c_number
+                            || processed.c_number_
+                            || processed.c_no
+                            || processed.request_id
+                            || processed.requestid
+                            || processed.id
+                            || processed.C_Number
+                            || processed['C_Number'];
+                        if (idCandidate) {
+                            processed.c_number = String(idCandidate).trim();
+                            processed.C_Number = processed.c_number;
+                        }
+
+                        if (!processed.created_by) processed.created_by = item['Created By'] || item['created by'] || item['Creator'] || item['creator'];
+                        if (typeof processed.files === 'string' && processed.files.trim() !== '') {
+                            try { processed.files = JSON.parse(processed.files); } catch (e) {
+                                // Not a JSON string, keep as is
+                            }
+                        }
+                        if (typeof processed.pri_details === 'string' && processed.pri_details.trim() !== '') {
+                            try { processed.pri_details = JSON.parse(processed.pri_details); } catch (e) {
+                                // Not a JSON string, keep as is
+                            }
+                        }
+                        // Prevent reverting "Complete" status if it was recently set locally
+                        const processedId = String(processed.c_number || processed.id || processed.request_id || '').trim();
+                        const localItem = processedId
+                            ? state.data.find(d => String(d?.c_number || d?.id || d?.request_id || '').trim() === processedId)
+                            : null;
+                        if (localItem && localItem.status === 'Complete' && processed.status === 'Awaiting PRI') {
+                            // Check if it was completed in the last 60 seconds
+                            const completedAt = localItem.completed_at ? new Date(localItem.completed_at) : null;
+                            if (completedAt && (new Date() - completedAt) < 60000) {
+                                console.log(`Preserving local "Complete" status for ${processedId || '(no-id)'} (server still says Awaiting PRI)`);
+                                processed.status = 'Complete';
+                                processed.completed_at = localItem.completed_at;
+                                processed.pri_uploaded_date = localItem.pri_uploaded_date;
+                            }
+                        }
+                        if (localItem && localItem.pri_last_saved_at && !processed.pri_last_saved_at) {
+                            processed.pri_last_saved_at = localItem.pri_last_saved_at;
+                        }
+                        return processed;
+                    });
+                    updateStats();
+                    populateFilters();
+                    renderTable();
+                } else {
+                    throw new Error('Data format error: Expected a JSON array or an object with data/rows/records.');
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                setError(error.message || 'Failed to load data from Google Sheets.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // UI Helpers
+        function setLoading(loading) {
+            state.isLoading = loading;
+            const overlay = document.getElementById('loading-overlay');
+            if (loading) overlay.classList.remove('hidden');
+            else overlay.classList.add('hidden');
+        }
+
+        function setError(message) {
+            state.fetchError = message;
+            const banner = document.getElementById('error-banner');
+            const msg = document.getElementById('error-message');
+            // Some templates don't render error elements; don't break loading flow.
+            if (!banner || !msg) return;
+
+            if (message) {
+                banner.classList.remove('hidden');
+                msg.textContent = message;
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function setActiveTab(tab) {
+            state.activeTab = tab;
+            renderTabs();
+            renderTable();
+        }
+
+        function updateStats() {
+            const statsContainer = document.getElementById('stats-container');
+            if (!statsContainer) return;
+
+            let awaitingPri = 0;
+            let completeStatus = 0;
+
+            state.data.forEach(item => {
+                const effectiveStatus = getEffectivePRIStatus(item);
+                if (effectiveStatus === 'Complete') completeStatus++;
+                else awaitingPri++;
+            });
+
+            const pill =
+                'background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;';
+            const dot = 'width:6px;height:6px;border-radius:50%;background:#059669;flex-shrink:0;display:inline-block;';
+
+            statsContainer.innerHTML = `
+        <div class="flex flex-wrap items-center gap-3 animate-slide-up mt-2">
+            <div style="${pill}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold shadow-sm">
+                <span style="${dot}" aria-hidden="true"></span>
+                Awaiting PRI: <span class="tabular-nums">${awaitingPri}</span>
+            </div>
+            <div style="${pill}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold shadow-sm">
+                <span style="${dot}" aria-hidden="true"></span>
+                Complete Status: <span class="tabular-nums">${completeStatus}</span>
+            </div>
+        </div>`;
+        }
+
+        function renderTabs() {
+            const tabsContainer = document.getElementById('tabs-container');
+            if (!tabsContainer) return;
+
+            const statusSet = new Set();
+            state.data.forEach(item => {
+                const effectiveStatus = getEffectivePRIStatus(item);
+                statusSet.add(effectiveStatus);
+            });
+
+            const uniqueStatuses = Array.from(statusSet)
+                .filter(s => s !== 'Overdue')
+                .sort();
+            if (uniqueStatuses.length === 0) {
+                uniqueStatuses.push('Awaiting PRI', 'Complete');
+            }
+
+            if (state.activeTab === 'Overdue' || !uniqueStatuses.includes(state.activeTab)) {
+                if (uniqueStatuses.includes('Awaiting PRI')) state.activeTab = 'Awaiting PRI';
+                else state.activeTab = uniqueStatuses[0];
+            }
+
+            tabsContainer.innerHTML = uniqueStatuses.map(status => `
+        <button onclick="setActiveTab('${status.replace(/'/g, "\\'")}')" 
+                class="pb-3 px-4 text-[13px] font-medium transition-colors relative whitespace-nowrap ${state.activeTab === status ? 'text-primary border-b-2 border-primary' : 'text-[#6C757D] hover:text-[#495057]'}">
+            ${status}
+        </button>
+    `).join('');
+        }
+
+        function populateFilters() {
+            state.filterOptions.number = [...new Set(state.data.map(item => item.c_number?.toString()).filter(Boolean))].sort();
+            state.filterOptions.style = [...new Set(state.data.map(item => {
+                const t = pickField(item, ['title', 'pri_name', 'style', 'style_name', 'request_title'], '');
+                return t && String(t).trim() !== '' && t !== 'N/A' ? String(t).trim() : null;
+            }).filter(Boolean))].sort();
+            state.filterOptions.customer = [...new Set(state.data.map(item => item.customer?.toString()).filter(Boolean))].sort();
+            const pmSet = new Set();
+            state.data.forEach(item => {
+                if (!item || typeof item !== 'object') return;
+                ['pl_name', 'PL_Name', 'pm_name', 'PM_Name', 'pri_name', 'PRI_Name'].forEach(k => {
+                    const v = item[k];
+                    if (v !== undefined && v !== null && String(v).trim() !== '') pmSet.add(String(v).trim());
+                });
+            });
+            state.filterOptions.pmPl = [...pmSet].sort();
+
+            renderTabs();
+            ['number', 'style', 'customer', 'pmPl'].forEach(t => renderDropdownOptions(t));
+        }
+
+        function renderDropdownOptions(type, filterText = '') {
+            const container = document.getElementById(`options-${type}`);
+            if (!container) return;
+
+            const options = state.filterOptions[type] || [];
+            const q = (filterText || '').toLowerCase();
+            const filtered = options.filter(o => String(o).toLowerCase().includes(q));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="px-4 py-3 text-sm text-[#94A3B8]">No results — type to search or pick from the list</div>`;
+            } else {
+                container.innerHTML = filtered.map(o => {
+                    const label = escapeHtmlText(o);
+                    const val = escapeHtmlAttr(o);
+                    return `
+            <button type="button" class="pri-filter-option w-full text-left px-4 py-2.5 text-[13px] text-[#374151] hover:bg-[#F1F5F9] hover:text-[#2563EB] border-0 bg-transparent cursor-pointer transition-colors border-b border-[#F1F5F9] last:border-b-0"
+                data-filter-type="${type}" data-value="${val}">
+                ${label}
+            </button>`;
+                }).join('');
+            }
+        }
+
+        const FILTER_INPUT_TYPES = ['number', 'style', 'customer', 'pmPl'];
+
+        function filterInputId(type) {
+            return type === 'pmPl' ? 'filter-pmPl' : `filter-${type}`;
+        }
+
+        function showDropdown(type) {
+            FILTER_INPUT_TYPES.forEach(t => {
+                if (t !== type) {
+                    const el = document.getElementById(`options-${t}`);
+                    if (el) el.classList.add('hidden');
+                }
+            });
+            const container = document.getElementById(`options-${type}`);
+            const input = document.getElementById(filterInputId(type));
+            if (container && input) {
+                container.classList.remove('hidden');
+                renderDropdownOptions(type, input.value);
+            }
+        }
+
+        function filterDropdown(type) {
+            const input = document.getElementById(filterInputId(type));
+            if (input) {
+                const container = document.getElementById(`options-${type}`);
+                if (container) container.classList.remove('hidden');
+                renderDropdownOptions(type, input.value);
+            }
+        }
+
+        function toggleFilterDropdownBtn(type, e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const container = document.getElementById(`options-${type}`);
+            if (!container) return;
+            const opening = container.classList.contains('hidden');
+            FILTER_INPUT_TYPES.forEach(t => {
+                const el = document.getElementById(`options-${t}`);
+                if (el) el.classList.add('hidden');
+            });
+            if (opening) {
+                container.classList.remove('hidden');
+                const input = document.getElementById(filterInputId(type));
+                renderDropdownOptions(type, input ? input.value : '');
+            }
+        }
+
+        function selectOption(type, value) {
+            const el = document.getElementById(filterInputId(type));
+            const opts = document.getElementById(`options-${type}`);
+            if (el) el.value = value == null ? '' : String(value);
+            if (opts) opts.classList.add('hidden');
+        }
+
+        // Global click listener to close dropdowns
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.pri-filter-combobox')) {
+                FILTER_INPUT_TYPES.forEach(type => {
+                    const el = document.getElementById(`options-${type}`);
+                    if (el) el.classList.add('hidden');
+                });
+            }
+        });
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            const tableTitle = document.getElementById('table-title');
+            const tableSubtitle = document.getElementById('table-subtitle');
+            const galleryContainer = document.getElementById('gallery-container');
+            const tableSurface = document.getElementById('pri-table-surface');
+            const paginationInfo = document.getElementById('pagination-info');
+
+            if (!tbody) return;
+
+            if (state.activeTab === 'Dashboard') {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-20 text-center text-[#ADB5BD]">Dashboard view coming soon. Select a tab to manage items.</td></tr>';
+                if (galleryContainer) galleryContainer.style.display = 'none';
+                if (tableSurface) tableSurface.style.display = '';
+                if (paginationInfo) paginationInfo.textContent = 'Showing items';
+                return;
+            }
+
+            if (tableTitle) tableTitle.textContent = state.activeTab;
+
+            const mappedRows = state.data.map((item, dataIndex) => {
+                const safeItem = (item && typeof item === 'object') ? item : {};
+                const cNumber = String(pickField(safeItem, ['c_number', 'C_Number', 'request_id', 'id'], '')).trim();
+                const title = pickField(safeItem, ['title', 'pri_name', 'style', 'style_name', 'request_title'], 'N/A');
+                const customer = pickField(safeItem, ['customer', 'cust_name', 'customer_name'], '-');
+                const dept = pickField(safeItem, ['cust_dept', 'dept', 'department', 'cus_dept'], '-');
+                const plPmSearch = [
+                    pickField(safeItem, ['pl_name', 'PL_Name', 'pl name']),
+                    pickField(safeItem, ['pm_name', 'pm_name_pl', 'PM_Name', 'pm name']),
+                    pickField(safeItem, ['pri_name', 'PRI_Name'])
+                ].filter(Boolean).join(' ').toLowerCase();
+                const rawStatus = getPriSheetStatus(safeItem);
+                const effectiveStatus = getEffectivePRIStatus(safeItem);
+                const badgeStatus = effectiveStatus;
+                return {
+                    ...safeItem,
+                    cNumber,
+                    title,
+                    customer,
+                    dept,
+                    plPmSearch,
+                    rawStatus,
+                    effectiveStatus,
+                    badgeStatus,
+                    displayStatus: badgeStatus,
+                    _dataIndex: dataIndex
+                };
+            });
+
+            let filtered = mappedRows.filter(item => {
+                const matchesTab = matchesTabByPriStatus(item, state.activeTab);
+                const navSearch = state.filterValues.number && state.filterValues.number === state.filterValues.customer;
+                let matchesSearch;
+                if (navSearch) {
+                    const q = state.filterValues.number.toLowerCase();
+                    matchesSearch = (item.cNumber || '').toString().toLowerCase().includes(q) ||
+                        (item.customer || '').toString().toLowerCase().includes(q) ||
+                        (item.title || '').toString().toLowerCase().includes(q) ||
+                        (item.plPmSearch || '').includes(q);
+                } else {
+                    const fv = state.filterValues;
+                    const matchesNumber = !fv.number || (item.cNumber || '').toString().toLowerCase().includes(fv.number.toLowerCase());
+                    const matchesStyle = !fv.style || (item.title || '').toString().toLowerCase().includes(fv.style.toLowerCase());
+                    const matchesCustomer = !fv.customer || (item.customer || '').toString().toLowerCase().includes(fv.customer.toLowerCase());
+                    const matchesPmPl = !fv.pmPl || (item.plPmSearch || '').includes(fv.pmPl.toLowerCase());
+                    matchesSearch = matchesNumber && matchesStyle && matchesCustomer && matchesPmPl;
+                }
+                return matchesTab && matchesSearch;
+            });
+
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-20 text-center text-[#ADB5BD]">No ${state.activeTab.toLowerCase()} items found.</td></tr>`;
+                if (galleryContainer) {
+                    galleryContainer.style.display = 'flex';
+                    galleryContainer.innerHTML = `
+                <div class="pattern-gallery-row pattern-gallery-row--head">
+                    <div>Request ID</div>
+                    <div>Title</div>
+                    <div>Customer</div>
+                    <div>Dept</div>
+                    <div>Status</div>
+                    <div style="text-align:right;">Action</div>
+                </div>
+                <div class="pattern-gallery-row">
+                    <div style="grid-column: 1 / -1; color: #94a3b8; text-align: center; padding: 10px 0;">
+                        No ${state.activeTab.toLowerCase()} items found.
+                    </div>
+                </div>`;
+                }
+                if (tableSurface) tableSurface.style.display = 'none';
+                if (paginationInfo) paginationInfo.textContent = `Showing 0 items`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => `
+        <tr class="hover:bg-[#FBFBFC] transition-colors group">
+            <td class="px-4 py-3 text-[13px] font-bold text-primary">${item.cNumber || '-'}</td>
+            <td class="px-4 py-3 text-[13px] text-[#495057] font-medium">${item.title}</td>
+            <td class="px-4 py-3 text-[13px] text-[#495057]">${item.customer}</td>
+            <td class="px-4 py-3 text-[13px] text-[#495057]">${item.dept}</td>
+            <td class="px-4 py-3">${getStatusBadge(item.badgeStatus || item.displayStatus)}</td>
+            <td class="px-4 py-3 text-center">
+                <button type="button" onclick="openRequestDetailsModal('', true, ${item._dataIndex})" class="inline-flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-md text-[11px] font-bold hover:bg-secondary transition-all">
+                    View Details
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+            if (galleryContainer) {
+                galleryContainer.style.display = 'flex';
+                galleryContainer.innerHTML = `
+            <div class="pattern-gallery-row pattern-gallery-row--head">
+                <div>Request ID</div>
+                <div>Title</div>
+                <div>Customer</div>
+                <div>Dept</div>
+                <div>Status</div>
+                <div style="text-align:right;">Action</div>
+            </div>
+            ${filtered.map(item => `
+                <div class="pattern-gallery-row">
+                    <div class="pattern-gallery-cell--id">${item.cNumber || '-'}</div>
+                    <div>${item.title}</div>
+                    <div>${item.customer}</div>
+                    <div>${item.dept}</div>
+                    <div>${getStatusBadge(item.badgeStatus || item.displayStatus)}</div>
+                    <div style="text-align:right;">
+                        <button type="button" onclick="openRequestDetailsModal('', true, ${item._dataIndex})" class="btn-primary" style="padding: 8px 14px; font-size: 12px;">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        `;
+            }
+            if (tableSurface) tableSurface.style.display = 'none';
+            if (paginationInfo) paginationInfo.textContent = `Showing ${filtered.length} items`;
+
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        function getStatusBadge(status) {
+            const styles = {
+                'Awaiting PRI': 'bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]',
+                'Complete': 'bg-[#D1FAE5] text-[#065F46] border-[#A7F3D0]',
+                'Overdue': 'bg-[#FEE2E2] text-[#DC2626] border-[#FECACA]',
+            };
+            const icons = {
+                'Awaiting PRI': 'clock',
+                'Complete': 'check-circle-2',
+                'Overdue': 'alert-circle',
+            };
+            return `<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border ${styles[status] || styles['Awaiting PRI']}">
+        <i data-lucide="${icons[status] || 'clock'}" class="w-2.5 h-2.5"></i>
+        ${status}
+    </div>`;
+        }
+
+        // Calendar Logic
+        // --- Calendar Section ---
+
+        function renderCalendar() {
+            console.log('Rendering calendar...');
+            const grid = document.getElementById('calendar-grid');
+            const titleElement = document.getElementById('cal-month-title');
+            if (!grid || !titleElement) {
+                console.error('Calendar grid or title element not found');
+                return;
+            }
+
+            // Sync Header Text
+            const year = calCurrentDate.getFullYear();
+            const month = calCurrentDate.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            titleElement.textContent = `${monthNames[month]} ${year}`;
+
+            // Reset Grid
+            grid.innerHTML = '';
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+
+            let calendarItems = [];
+            const dayCounts = {};
+            if (state.data && Array.isArray(state.data)) {
+                // Filter data: Only 'Complete' status items for the calendar
+                calendarItems = state.data.filter(item => {
+                    try {
+                        return item && getEffectivePRIStatus(item) === 'Complete';
+                    } catch (e) { return false; }
+                });
+
+                calendarItems.forEach(item => {
+                    try {
+                        const d = getCalendarRecordDate(item);
+                        if (d && d.getFullYear() === year && d.getMonth() === month) {
+                            const day = d.getDate();
+                            dayCounts[day] = (dayCounts[day] || 0) + 1;
+                        }
+                    } catch (e) { /* skip bad row */ }
+                });
+            }
+
+            // --- Grid Rendering ---
+
+            // Previous month padding
+            for (let x = 0; x < firstDayIndex; x++) {
+                const dayNum = prevMonthDays - firstDayIndex + x + 1;
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'pri-cal-cell pri-cal-cell--muted';
+                emptyCell.style.background = '#f9fafb';
+                emptyCell.style.borderRadius = '6px';
+                emptyCell.style.minHeight = '100px';
+                emptyCell.style.padding = '8px';
+
+                const num = document.createElement('span');
+                num.style.color = '#d1d5db';
+                num.style.fontSize = '14px';
+                num.textContent = dayNum;
+                emptyCell.appendChild(num);
+                grid.appendChild(emptyCell);
+            }
+
+            // Current month days
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'pri-cal-cell';
+                dayCell.style.border = '1px solid #e5e7eb';
+                dayCell.style.borderRadius = '6px';
+                dayCell.style.padding = '8px';
+                dayCell.style.display = 'flex';
+                dayCell.style.flexDirection = 'column';
+                dayCell.style.minHeight = '100px';
+                dayCell.style.backgroundColor = '#ffffff';
+
+                const dateNumber = document.createElement('strong');
+                dateNumber.style.color = '#374151';
+                dateNumber.style.fontSize = '14px';
+                dateNumber.textContent = i;
+                dayCell.appendChild(dateNumber);
+
+                if (dayCounts[i]) {
+                    const countBadge = document.createElement('div');
+                    countBadge.style.marginTop = 'auto';
+                    countBadge.style.backgroundColor = 'var(--primary-color)';
+                    countBadge.style.color = '#fff';
+                    countBadge.style.padding = '6px 4px';
+                    countBadge.style.borderRadius = '4px';
+                    countBadge.style.fontSize = '10px';
+                    countBadge.style.fontWeight = '700';
+                    countBadge.style.textAlign = 'center';
+                    countBadge.style.cursor = 'pointer';
+                    countBadge.style.transition = 'all 0.2s';
+                    countBadge.textContent = `${dayCounts[i]} completed`;
+
+                    countBadge.addEventListener('mouseenter', () => countBadge.style.opacity = '0.8');
+                    countBadge.addEventListener('mouseleave', () => countBadge.style.opacity = '1');
+
+                    countBadge.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const dailyReqs = calendarItems.filter(item => {
+                            const d = getCalendarRecordDate(item);
+                            return d && d.getFullYear() === year && d.getMonth() === month && d.getDate() === i;
+                        });
+
+                        const modal = document.getElementById('calendar-day-modal');
+                        const mTitle = document.getElementById('calendar-day-title');
+                        const mContent = document.getElementById('calendar-day-content');
+
+                        if (modal && mTitle && mContent) {
+                            mTitle.textContent = `Completed PRI on ${monthNames[month]} ${i}, ${year}`;
+                            mContent.innerHTML = dailyReqs.map(r => {
+                                const cNum = String(pickField(r, ['c_number', 'C_Number'], 'Unknown')).trim();
+                                const cust = pickField(r, ['customer', 'Customer'], 'No Customer');
+                                return `
+                                    <div style="padding: 12px 0; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                                        <div style="display:flex; flex-direction: column; min-width: 0;">
+                                            <span style="font-weight: 700; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${cNum}</span>
+                                            <span style="font-size: 12px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${cust}</span>
+                                        </div>
+                                        <button onclick="openRequestDetailsModal('${cNum}', true)" 
+                                                class="px-3 py-1.5 text-[11px] font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors shrink-0">
+                                            Details
+                                        </button>
+                                    </div>
+                                `;
+                            }).join('');
+                            modal.style.display = 'flex';
+                        }
+                    });
+
+                    dayCell.appendChild(countBadge);
+                }
+                grid.appendChild(dayCell);
+            }
+
+            // Next month padding
+            const totalCells = firstDayIndex + daysInMonth;
+            const remaining = (7 - (totalCells % 7)) % 7;
+            for (let n = 1; n <= remaining; n++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'pri-cal-cell pri-cal-cell--muted';
+                emptyCell.style.background = '#f9fafb';
+                emptyCell.style.borderRadius = '6px';
+                emptyCell.style.minHeight = '100px';
+                emptyCell.style.padding = '8px';
+
+                const num = document.createElement('span');
+                num.style.color = '#d1d5db';
+                num.style.fontSize = '14px';
+                num.textContent = n;
+                emptyCell.appendChild(num);
+                grid.appendChild(emptyCell);
+            }
+        }
+
+        function changeMonth(delta) {
+            calCurrentDate.setMonth(calCurrentDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function toggleCalendarModal(open) {
+            const section = document.getElementById('calendar-section');
+            const tableShell = document.getElementById('pri-table-shell');
+            if (!section) return;
+
+            if (open) {
+                section.style.display = '';
+                if (tableShell) tableShell.style.display = 'none';
+                // Set nav active style for calendar
+                const ids = ['nav-tab-dashboard', 'nav-tab-awaiting', 'nav-tab-complete', 'nav-tab-calendar'];
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.className = 'px-4 py-1.5 text-[13px] font-medium rounded-lg transition-all hover:bg-[#EEF2FF] hover:text-primary text-[#6C757D]';
+                });
+                const cal = document.getElementById('nav-tab-calendar');
+                if (cal) cal.className = 'px-4 py-1.5 text-[13px] font-semibold rounded-lg bg-[#EEF2FF] text-primary';
+                renderCalendar();
+            } else {
+                section.style.display = 'none';
+                if (tableShell) tableShell.style.display = '';
+                // Restore active tab highlight if we have one
+                const current = state.activeTab || 'Awaiting PRI';
+                // Update nav highlight without re-opening calendar
+                const map = {
+                    'Dashboard': 'nav-tab-dashboard',
+                    'Awaiting PRI': 'nav-tab-awaiting',
+                    'Complete': 'nav-tab-complete',
+                };
+                Object.values(map).forEach(id => {
+                    const btn = document.getElementById(id);
+                    if (btn) btn.className = 'px-4 py-1.5 text-[13px] font-medium rounded-lg transition-all hover:bg-[#EEF2FF] hover:text-primary text-[#6C757D]';
+                });
+                const cal = document.getElementById('nav-tab-calendar');
+                if (cal) cal.className = 'px-4 py-1.5 text-[13px] font-medium rounded-lg transition-all hover:bg-[#EEF2FF] hover:text-primary text-[#6C757D]';
+                const activeId = map[current];
+                if (activeId) {
+                    const activeBtn = document.getElementById(activeId);
+                    if (activeBtn) activeBtn.className = 'px-4 py-1.5 text-[13px] font-semibold rounded-lg bg-[#EEF2FF] text-primary';
+                }
+            }
+        }
+
+        function toggleRequestDetails(open) {
+            const modal = document.getElementById('request-details-modal');
+            if (!modal) return;
+            if (open) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                modal.style.zIndex = '20000'; // Explicit override: always above calendar-day-modal (15000)
+            } else {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                modal.style.zIndex = '';
+                resetPriModalSteps();
+            }
+        }
+
+        /** Restore PRI form + hide export success (same overlay) */
+        function resetPriModalSteps() {
+            const main = document.getElementById('request-details-main-view');
+            const success = document.getElementById('request-details-success-view');
+            if (main) {
+                main.classList.remove('hidden', 'pri-modal-main--hidden');
+            }
+            if (success) {
+                success.classList.add('hidden');
+                success.classList.remove('pri-modal-success--visible');
+            }
+        }
+
+        function openRequestDetailsModal(cNumber, isPRI = false, dataIndex) {
+            let item = null;
+            if (dataIndex !== undefined && dataIndex !== null && dataIndex !== '') {
+                const i = Number(dataIndex);
+                if (!Number.isNaN(i) && i >= 0 && i < state.data.length) {
+                    item = state.data[i];
+                }
+            }
+            if (!item) {
+                const target = String(cNumber || '').trim();
+                item = state.data.find(d => {
+                    if (!d || typeof d !== 'object') return false;
+                    const ids = [
+                        d.c_number,
+                        d.id,
+                        d.request_id,
+                        d.requestId
+                    ].map(v => String(v || '').trim()).filter(Boolean);
+                    return ids.includes(target);
+                });
+            }
+            if (!item) return;
+
+            state.selectedRequest = item;
+
+            // Parse pri_details if it's a string (from Google Sheet or previous save)
+            let initialDetails = [{ detail: '', minutes: 0 }];
+            if (item.pri_details) {
+                try {
+                    const parsed = typeof item.pri_details === 'string' ? JSON.parse(item.pri_details) : item.pri_details;
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        initialDetails = parsed;
+                    }
+                } catch (e) {
+                    console.error('Error parsing pri_details:', e);
+                }
+            }
+            state.priDetails = [...initialDetails];
+            const effectiveStatus = getEffectivePRIStatus(item);
+
+            // Update Title and Toggle Sections
+            document.getElementById('request-details-title').textContent = isPRI ? 'Request Details' : 'Request Information';
+            const calcSection = document.getElementById('pri-calculation-section');
+            const actionButtons = document.getElementById('pri-action-buttons');
+            const footerSaveWrap = document.getElementById('pri-footer-save-wrap');
+
+            if (isPRI) {
+                if (effectiveStatus === 'Complete') {
+                    calcSection.classList.add('hidden');
+                    actionButtons.classList.remove('hidden');
+                    if (footerSaveWrap) footerSaveWrap.classList.add('hidden');
+                } else {
+                    calcSection.classList.remove('hidden');
+                    actionButtons.classList.remove('hidden');
+                    if (footerSaveWrap) footerSaveWrap.classList.remove('hidden');
+
+                    const saveBtn = document.getElementById('pri-save-btn');
+                    const saveBtnBase =
+                        'pri-modal-save-btn px-7 py-2.5 rounded-xl font-extrabold text-sm inline-flex items-center justify-center gap-2 shrink-0 shadow-md transition-all active:scale-95';
+                    saveBtn.setAttribute('aria-label', 'Save PRI details');
+                    saveBtn.innerHTML = '<i data-lucide="save" class="w-4 h-4 shrink-0" aria-hidden="true"></i><span class="pri-save-btn__label whitespace-nowrap">Save</span>';
+                    saveBtn.className = saveBtnBase;
+                }
+            } else {
+                calcSection.classList.add('hidden');
+                actionButtons.classList.remove('hidden');
+                if (footerSaveWrap) footerSaveWrap.classList.add('hidden');
+            }
+
+            const content = document.getElementById('request-details-content');
+
+            if (isPRI && effectiveStatus === 'Complete') {
+                let detailsHtml = '';
+                const hasLines = state.priDetails && state.priDetails.length > 0 && state.priDetails.some(d => String(d.detail || '').trim() !== '');
+                if (hasLines) {
+                    detailsHtml = `
+            <div class="mt-6 border border-[#E9ECEF] rounded-xl overflow-hidden bg-white shadow-sm">
+                <div class="px-4 py-3 bg-[#EEF2FF] border-b border-[#E9ECEF] flex items-center justify-between">
+                    <span class="text-xs font-bold text-primary flex items-center gap-2">
+                        <i data-lucide="list-checks" class="w-4 h-4"></i>
+                        PRI calculation
+                    </span>
+                    <span class="text-xs font-bold text-primary bg-white px-2 py-1 rounded shadow-sm border border-primary/20">Total: ${item.total_minutes || 0} min</span>
+                </div>
+                <div class="divide-y divide-[#E9ECEF]">
+                    ${state.priDetails.map(d => `
+                    <div class="flex justify-between px-4 py-3 text-[13px]">
+                        <span class="text-[#495057] font-medium leading-relaxed pr-4">${d.detail || '—'}</span>
+                        <span class="text-[#212529] font-bold shrink-0">${d.minutes} min</span>
+                    </div>
+                    `).join('')}
+                </div>
+            </div>`;
+                } else {
+                    detailsHtml = `
+            <div class="mt-6 p-4 rounded-xl border border-dashed border-[#DEE2E6] bg-[#F8F9FA] text-[13px] text-[#6C757D] text-center">
+                No PRI line items on file.
+            </div>`;
+                }
+
+                content.innerHTML = `
+            ${buildPriRequestDetailsCardHtml(item, { showPriExtras: true, statusValue: effectiveStatus })}
+            ${detailsHtml}
+            ${buildPriDownloadButtonsHtml()}
+        `;
+            } else if (isPRI) {
+                // Awaiting PRI: detail card + editable calculation only (downloads after Save on success step)
+                content.innerHTML = `
+            ${buildPriRequestDetailsCardHtml(item, { showPriExtras: false, statusValue: effectiveStatus })}
+        `;
+                renderPRIDetailRows();
+            } else {
+                // Calendar / non-PRI: same detail card + optional saved lines + downloads
+                let detailsHtml = '';
+                if (state.priDetails && state.priDetails.length > 0 && state.priDetails[0].detail.trim() !== '') {
+                    detailsHtml = `
+            <div class="mt-6 border border-[#E9ECEF] rounded-xl overflow-hidden bg-white shadow-sm">
+                <div class="px-4 py-3 bg-[#EEF2FF] border-b border-[#E9ECEF] flex items-center justify-between">
+                    <span class="text-xs font-bold text-primary flex items-center gap-2">
+                        <i data-lucide="list-checks" class="w-4 h-4"></i>
+                        Saved Details
+                    </span>
+                    <span class="text-xs font-bold text-primary bg-white px-2 py-1 rounded shadow-sm border border-primary/20">Total: ${item.total_minutes || 0} min</span>
+                </div>
+                <div class="divide-y divide-[#E9ECEF]">
+                    ${state.priDetails.map(d => `
+                    <div class="flex justify-between px-4 py-3 text-[13px]">
+                        <span class="text-[#495057] font-medium leading-relaxed pr-4">${d.detail}</span>
+                        <span class="text-[#212529] font-bold shrink-0">${d.minutes} min</span>
+                    </div>
+                    `).join('')}
+                </div>
+            </div>`;
+                }
+
+                content.innerHTML = `
+            ${buildPriRequestDetailsCardHtml(item, { showPriExtras: false, statusValue: getEffectivePRIStatus(item) })}
+            ${detailsHtml}
+            ${buildPriDownloadButtonsHtml()}
+        `;
+            }
+
+            resetPriModalSteps();
+
+            toggleRequestDetails(true);
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        function dismissPriSavedSuccess() {
+            toggleRequestDetails(false);
+            showToast('PRI details saved. You can open the request again anytime to export.', 'info');
+        }
+
+        function renderPRIDetailRows() {
+            const container = document.getElementById('pri-calculation-rows');
+            const totalDisplay = document.getElementById('pri-details-total');
+
+            container.innerHTML = state.priDetails.map((d, i) => `
+        <div class="flex items-center gap-2 group">
+            <div class="flex-1 grid grid-cols-12 gap-2">
+                <input type="text" placeholder="Detail" class="col-span-8 px-2 py-1.5 border border-[#DEE2E6] rounded-md text-[12px] focus:ring-1 focus:ring-primary outline-none" value="${d.detail}" oninput="updatePRIDetailRow(${i}, 'detail', this.value)">
+                <input type="number" placeholder="Min" class="col-span-4 px-2 py-1.5 border border-[#DEE2E6] rounded-md text-[12px] focus:ring-1 focus:ring-primary outline-none text-right" value="${d.minutes || ''}" oninput="updatePRIDetailRow(${i}, 'minutes', this.value)">
+            </div>
+            <button onclick="removePRIDetailRow(${i})" class="p-1 text-[#ADB5BD] hover:text-[#EF4444] transition-colors">
+                <i data-lucide="minus-circle" class="w-4 h-4"></i>
+            </button>
+        </div>
+    `).join('');
+
+            const total = state.priDetails.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
+            totalDisplay.textContent = total;
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+        function addPRIDetailRow() {
+            state.priDetails.push({ detail: '', minutes: 0 });
+            renderPRIDetailRows();
+        }
+
+        function removePRIDetailRow(index) {
+            if (state.priDetails.length > 1) state.priDetails.splice(index, 1);
+            else state.priDetails = [{ detail: '', minutes: 0 }];
+            renderPRIDetailRows();
+        }
+
+        function updatePRIDetailRow(index, field, value) {
+            state.priDetails[index][field] = field === 'minutes' ? Number(value) : value;
+            const total = state.priDetails.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
+            document.getElementById('pri-details-total').textContent = total;
+        }
+
+        async function savePRIDetails() {
+            await saveAndExportPRI();
+        }
+
+        /** Download Excel/PDF only (no SharePoint, no sheet save) — for Complete tab details. */
+        async function downloadPRIReport(format) {
+            if (!state.selectedRequest) {
+                console.error('Download failed: No request selected');
+                return;
+            }
+            setLoading(true);
+            try {
+                if (format === 'excel') await exportToExcel();
+                else await exportToPDF();
+            } catch (error) {
+                console.error('downloadPRIReport:', error);
+                showToast('Download failed: ' + (error && error.message ? error.message : error), 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function exportAndComplete(format) {
+            if (!state.selectedRequest) {
+                console.error('Export failed: No request selected');
+                return;
+            }
+
+            console.log(`Starting export and complete flow for format: ${format}`, state.selectedRequest.c_number);
+            setLoading(true);
+
+            try {
+                // 1. Export the file (Client-side download)
+                if (format === 'excel') {
+                    await exportToExcel();
+                } else {
+                    await exportToPDF();
+                }
+
+                // 2. Open SharePoint Folder
+                // Priority: item.folderlink (normalized from code.gs folderLink) > item.folder_path > default
+                const sharepointUrl = state.selectedRequest.folderlink || state.selectedRequest.folder_path || state.SHAREPOINT_URL;
+                console.log('Opening SharePoint:', sharepointUrl);
+                window.open(sharepointUrl, '_blank');
+
+                // 3. Automatically complete and save to Google Sheet
+                // This triggers handlePriSave_ in code.gs which also does server-side export to Drive
+                await savePRI(true);
+
+                // 4. Close modal and switch to Complete tab
+                toggleRequestDetails(false);
+                if (typeof setActiveTab === 'function') {
+                    setActiveTab('Complete');
+                }
+
+            } catch (error) {
+                console.error('Error exporting/completing:', error);
+                alert('An error occurred during export/completion: ' + error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function exportToExcel() {
+            try {
+                const item = state.selectedRequest;
+                if (!item) throw new Error('No item selected');
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('PRI Report');
+
+                const fileName = `PRI_Report_${String(item.c_number || 'NA')}`;
+
+                // Header Info
+                const titleRow = worksheet.addRow(['Title:', item.title || item.pri_name || 'N/A', '', 'Date:', new Date().toLocaleDateString('en-GB')]);
+                const cNumberRow = worksheet.addRow(['C-Number:', String(item.c_number || 'N/A'), '', 'Customer:', item.customer || 'N/A']);
+                worksheet.addRow([]); // Spacer
+
+                // Style Header Info
+                [titleRow, cNumberRow].forEach(row => {
+                    row.getCell(1).font = { color: { argb: 'FF0000FF' }, bold: true };
+                    row.getCell(2).font = { bold: true };
+                    row.getCell(4).font = { color: { argb: 'FF0000FF' }, bold: true };
+                });
+
+                // Table Header
+                const headerRow = worksheet.addRow(['Details', '', 'Minutes']);
+                worksheet.mergeCells(`A${headerRow.number}:B${headerRow.number}`);
+                worksheet.mergeCells(`C${headerRow.number}:D${headerRow.number}`);
+
+                headerRow.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF065F46' } };
+                    cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+                    cell.alignment = { horizontal: 'center' };
+                });
+
+                // Data Rows
+                let details = [];
+                try {
+                    details = typeof item.pri_details === 'string' ? JSON.parse(item.pri_details) : (item.pri_details || []);
+                    if (!Array.isArray(details)) details = [];
+                } catch (e) { details = []; }
+
+                details.forEach(d => {
+                    const row = worksheet.addRow([d.detail || '—', '', Number(d.minutes) || 0]);
+                    worksheet.mergeCells(`A${row.number}:B${row.number}`);
+                    worksheet.mergeCells(`C${row.number}:D${row.number}`);
+                    row.getCell(3).alignment = { horizontal: 'right' };
+                    row.eachCell(cell => {
+                        cell.border = {
+                            top: { style: 'thin' },
+                            left: { style: 'thin' },
+                            bottom: { style: 'thin' },
+                            right: { style: 'thin' }
+                        };
+                    });
+                });
+
+                // Total Row
+                worksheet.addRow([]);
+                const total = details.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
+                const totalRow = worksheet.addRow(['Total:', '', '', total]);
+                worksheet.mergeCells(`A${totalRow.number}:C${totalRow.number}`);
+                totalRow.getCell(1).font = { bold: true };
+                totalRow.getCell(4).font = { bold: true };
+                totalRow.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFE0' } }; // Light yellow
+                totalRow.getCell(4).alignment = { horizontal: 'right' };
+
+                // Column Widths
+                worksheet.getColumn(1).width = 20;
+                worksheet.getColumn(2).width = 40;
+                worksheet.getColumn(3).width = 10;
+                worksheet.getColumn(4).width = 15;
+
+                const buffer = await workbook.xlsx.writeBuffer();
+                saveAs(new Blob([buffer]), `${fileName}.xlsx`);
+            } catch (err) {
+                console.error('Excel export error:', err);
+                throw new Error('Excel download failed: ' + err.message);
+            }
+        }
+
+        async function exportToPDF() {
+            if (!state.selectedRequest) return;
+            const item = state.selectedRequest;
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Header: PRI Calculation Report
+                doc.setFontSize(24);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'bold');
+                doc.text('PRI Calculation Report', 14, 25);
+
+                // Header Info
+                doc.setFontSize(11);
+                doc.setTextColor(33, 37, 41);
+                doc.setFont(undefined, 'normal');
+
+                // Left Column
+                doc.setTextColor(0, 0, 255);
+                doc.text('Title:', 14, 40);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'bold');
+                doc.text(item.title || 'N/A', 30, 40);
+
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(0, 0, 255);
+                doc.text('C-Number:', 14, 48);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont(undefined, 'bold');
+                doc.text(String(item.c_number || 'N/A'), 35, 48);
+
+                // Right Column
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(0, 0, 255);
+                doc.text('Date:', 140, 40);
+                doc.setTextColor(0, 0, 0);
+                doc.text(new Date().toLocaleDateString('en-GB'), 155, 40);
+
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(0, 0, 255);
+                doc.text('Customer:', 140, 48);
+                doc.setTextColor(0, 0, 0);
+                doc.text(item.customer || 'N/A', 160, 48);
+
+                // Table
+                const details = typeof item.pri_details === 'string' ? JSON.parse(item.pri_details) : (item.pri_details || []);
+                const tableData = details.map(d => [d.detail, d.minutes]);
+                const total = details.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
+
+                doc.autoTable({
+                    startY: 60,
+                    head: [['Details', 'Minutes']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [6, 95, 70], textColor: [255, 255, 255], fontStyle: 'bold' },
+                    styles: { fontSize: 10, cellPadding: 5 },
+                    columnStyles: {
+                        0: { cellWidth: 'auto' },
+                        1: { cellWidth: 30, halign: 'right' }
+                    },
+                    margin: { left: 14, right: 14 }
+                });
+
+                // Footer with total
+                const finalY = doc.lastAutoTable.finalY;
+                doc.setFillColor(255, 255, 224); // Light yellow
+                doc.rect(14, finalY, 182, 10, 'F');
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text('Total Minutes:', 140, finalY + 7);
+                doc.text(total.toString(), 185, finalY + 7, { align: 'right' });
+
+                doc.save(`PRI_Report_${String(item.c_number || 'NA')}.pdf`);
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                throw new Error('PDF generation failed: ' + error.message);
+            }
+        }
+
+        function openDayDetails() {
+            // Calendar day details is handled by the vanilla-style calendar-day-modal.
+            // This function is kept as a no-op for backward compatibility.
+        }
+
+        // Modal Logic
+        function syncFilterInputsFromState() {
+            const n = document.getElementById('filter-number');
+            const st = document.getElementById('filter-style');
+            const c = document.getElementById('filter-customer');
+            const p = document.getElementById('filter-pmPl');
+            if (n) n.value = state.filterValues.number || '';
+            if (st) st.value = state.filterValues.style || '';
+            if (c) c.value = state.filterValues.customer || '';
+            if (p) p.value = state.filterValues.pmPl || '';
+        }
+
+        function cancelFilter() {
+            syncFilterInputsFromState();
+            toggleFilter(false);
+        }
+
+        function toggleFilter(open) {
+            const overlay = document.getElementById('filter-sidebar');
+            if (!overlay) return;
+            if (open) {
+                syncFilterInputsFromState();
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Close calendar day modal (vanilla/TechPack style)
+        document.addEventListener('DOMContentLoaded', () => {
+            const closeBtn = document.getElementById('close-calendar-day-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    const modal = document.getElementById('calendar-day-modal');
+                    if (modal) modal.style.display = 'none';
+                });
+            }
+
+            const prevBtn = document.getElementById('cal-prev-btn');
+            if (prevBtn) prevBtn.addEventListener('click', () => changeMonth(-1));
+
+            const nextBtn = document.getElementById('cal-next-btn');
+            if (nextBtn) nextBtn.addEventListener('click', () => changeMonth(1));
+
+            const filterPanel = document.getElementById('filter-panel');
+            if (filterPanel) {
+                filterPanel.addEventListener('click', (e) => {
+                    const opt = e.target.closest('.pri-filter-option');
+                    if (!opt) return;
+                    e.preventDefault();
+                    const type = opt.getAttribute('data-filter-type');
+                    const value = opt.getAttribute('data-value');
+                    if (type) selectOption(type, value !== null && value !== undefined ? value : '');
+                });
+            }
+        });
+
+        function applyFilters() {
+            state.filterValues.number = document.getElementById('filter-number')?.value.trim() || '';
+            state.filterValues.style = document.getElementById('filter-style')?.value.trim() || '';
+            state.filterValues.customer = document.getElementById('filter-customer')?.value.trim() || '';
+            state.filterValues.pmPl = document.getElementById('filter-pmPl')?.value.trim() || '';
+            toggleFilter(false);
+            renderTable();
+        }
+
+        function clearFilters() {
+            state.filterValues = { number: '', style: '', customer: '', pmPl: '' };
+            syncFilterInputsFromState();
+            renderTable();
+        }
+
+        // Save Logic
+        /** @returns {Promise<boolean>} true if save succeeded */
+        async function savePRI(shouldComplete = false, options = {}) {
+            const { closeModal = true, skipToast = false, notifyRequester } = options;
+            const sendCompletionEmail = shouldComplete && notifyRequester !== false;
+
+            if (!state.selectedRequest) {
+                console.error('Save failed: No request selected');
+                return false;
+            }
+
+            const saveBtn = document.getElementById('pri-save-btn');
+            const originalBtnContent = saveBtn ? saveBtn.innerHTML : '';
+
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = `
+                    <span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-radius:50%;border-top-color:white;animation:spin 0.8s ease-in-out infinite;vertical-align:sub;margin-right:6px;"></span>
+                    Saving...
+                `;
+            }
+
+            const total = state.priDetails.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
+            const newStatus = shouldComplete ? 'Complete' : state.selectedRequest.status;
+            const now = new Date();
+            const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+
+            const dataToSave = {
+                ...state.selectedRequest,
+                requestId: state.selectedRequest.c_number || state.selectedRequest.id || state.selectedRequest.requestId,
+                status: newStatus,
+                pri_details: JSON.stringify(state.priDetails),
+                total_minutes: total,
+                completed_at: shouldComplete ? now.toISOString() : (state.selectedRequest.completed_at || ''),
+                pri_uploaded_date: (shouldComplete || !state.selectedRequest.pri_uploaded_date) ? formattedDate : state.selectedRequest.pri_uploaded_date,
+                pri_last_saved_at: now.toISOString()
+            };
+
+            // Clean up for People Chip compatibility but KEEP created_by for identification if needed
+            delete dataToSave.displayStatus;
+            if (Array.isArray(dataToSave.files)) dataToSave.files = JSON.stringify(dataToSave.files);
+
+            const recipientEmail = getEmailFromCreatedBy(state.selectedRequest.created_by);
+
+            console.log('Saving PRI:', { shouldComplete, recipientEmail, c_number: state.selectedRequest.c_number });
+
+            setLoading(true);
+            try {
+                const payload = {
+                    action: 'save',
+                    data: dataToSave,
+                    create_excel: shouldComplete, // Enable server-side Drive export on completion
+                    email_notification: {
+                        enabled: sendCompletionEmail,
+                        recipient: recipientEmail,
+                        subject: shouldComplete ? `PRI Request Complete: ${state.selectedRequest.c_number}` : `PRI Details Saved: ${state.selectedRequest.c_number}`,
+                        message: shouldComplete ?
+                            `The PRI request for ${state.selectedRequest.c_number} has been completed.\n\nDetails:\n- Title: ${state.selectedRequest.title || state.selectedRequest.pri_name || 'N/A'}\n- Request ID: ${state.selectedRequest.c_number}\n- Customer: ${state.selectedRequest.customer}\n- Department: ${state.selectedRequest.cust_dept}\n- Total Minutes: ${total}\n- Status: Complete\n\nFiles have been uploaded to SharePoint.` :
+                            `The PRI request for ${state.selectedRequest.c_number} has been saved.`
+                    }
+                };
+
+                console.log('Sending payload to backend:', payload);
+
+                // Use 'cors' if possible for better error reporting, fallback to 'no-cors' if needed
+                await fetch(state.GOOGLE_SHEET_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('Backend request sent successfully (no-cors mode)');
+
+                // Update local state immediately
+                let index = state.data.findIndex(d => d === state.selectedRequest);
+                if (index === -1) {
+                    index = state.data.findIndex(d => String(d.c_number || '').trim() === String(state.selectedRequest.c_number || '').trim());
+                }
+                if (index !== -1) {
+                    state.data[index] = {
+                        ...state.data[index],
+                        status: newStatus,
+                        pri_details: [...state.priDetails],
+                        total_minutes: total,
+                        completed_at: dataToSave.completed_at,
+                        pri_uploaded_date: dataToSave.pri_uploaded_date,
+                        pri_last_saved_at: dataToSave.pri_last_saved_at
+                    };
+                    state.selectedRequest = state.data[index];
+                    console.log('Local state updated successfully');
+                }
+
+                state.isSaved = true;
+
+                // Update UI immediately
+                renderTable();
+                updateStats();
+                const calendarSection = document.getElementById('calendar-section');
+                if (calendarSection && calendarSection.style.display !== 'none') {
+                    renderCalendar();
+                }
+
+                if (closeModal) {
+                    toggleRequestDetails(false);
+                }
+
+                if (!skipToast) {
+                    if (!shouldComplete) {
+                        showToast('PRI details saved successfully.', 'success');
+                        setTimeout(() => fetchData(), 5000);
+                    } else {
+                        showToast('Status updated to Complete.', 'success');
+                        setActiveTab('Complete');
+                        setTimeout(() => fetchData(), 10000);
+                    }
+                } else if (!shouldComplete) {
+                    setTimeout(() => fetchData(), 5000);
+                } else {
+                    setTimeout(() => fetchData(), 10000);
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Error saving:', error);
+                showToast('Failed to save data: ' + (error && error.message ? error.message : error), 'error');
+                return false;
+            } finally {
+                if (typeof saveBtn !== 'undefined' && saveBtn && typeof originalBtnContent !== 'undefined' && originalBtnContent) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalBtnContent;
+                }
+                setLoading(false);
+            }
+        }
+
+        // Save first, then hide PRI form and show export success step (same overlay)
+        async function saveAndExportPRI() {
+            if (!state.selectedRequest) {
+                console.error('Save failed: No request selected');
+                return;
+            }
+            const ok = await savePRI(true, { closeModal: false, skipToast: true, notifyRequester: false });
+            if (!ok) return;
+
+            const mainView = document.getElementById('request-details-main-view');
+            const successView = document.getElementById('request-details-success-view');
+            if (mainView) {
+                mainView.classList.add('pri-modal-main--hidden');
+            }
+            if (successView) {
+                successView.classList.remove('hidden');
+                successView.classList.add('pri-modal-success--visible');
+            }
+            if (window.lucide) window.lucide.createIcons();
+        }
+
+    </script>
+</body>
+
+</html>
