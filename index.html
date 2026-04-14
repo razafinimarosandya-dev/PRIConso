@@ -1518,6 +1518,15 @@
                                 </p>
                             </div>
                             <div style="display: flex; gap: 8px; align-items: center;">
+                                <button id="clear-filter-btn" class="btn-ghost" onclick="clearFilters()"
+                                    style="display: none; align-items: center; gap: 4px; font-weight: 600; color: #ef4444;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                    Clear Filter
+                                </button>
                                 <button class="btn-ghost" onclick="toggleFilter(true)"
                                     style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #64748b;">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1526,7 +1535,7 @@
                                     </svg>
                                     Filter Data
                                 </button>
-                                <button class="btn-outline export-btn" onclick="exportToExcel()" type="button">
+                                <button class="btn-outline export-btn" onclick="exportTableToExcel()" type="button">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669"
                                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -1798,6 +1807,7 @@
             isFilterOpen: false,
             selectedRequest: null,
             filterValues: { number: '', style: '', customer: '', pmPl: '' },
+            filteredData: [],
             filterOptions: { number: [], style: [], customer: [], pmPl: [] },
             priDetails: [{ detail: '', minutes: 0 }],
             fetchError: null,
@@ -1835,6 +1845,7 @@
         window.savePRIDetails = savePRIDetails;
         window.exportAndComplete = exportAndComplete;
         window.downloadPRIReport = downloadPRIReport;
+        window.exportTableToExcel = exportTableToExcel;
         window.exportToExcel = exportToExcel;
         window.exportToPDF = exportToPDF;
         window.savePRI = savePRI;
@@ -2542,6 +2553,7 @@
             }
 
             if (tableTitle) tableTitle.textContent = state.activeTab;
+            updateClearFilterVisibility();
 
             const mappedRows = state.data.map((item, dataIndex) => {
                 const safeItem = (item && typeof item === 'object') ? item : {};
@@ -2572,7 +2584,7 @@
                 };
             });
 
-            let filtered = mappedRows.filter(item => {
+            state.filteredData = mappedRows.filter(item => {
                 const matchesTab = matchesTabByPriStatus(item, state.activeTab);
                 const navSearch = state.filterValues.number && state.filterValues.number === state.filterValues.customer;
                 let matchesSearch;
@@ -2592,6 +2604,8 @@
                 }
                 return matchesTab && matchesSearch;
             });
+
+            const filtered = state.filteredData;
 
 
             if (filtered.length === 0) {
@@ -3249,6 +3263,56 @@
             }
         }
 
+        async function exportTableToExcel() {
+            try {
+                const data = state.filteredData || [];
+                if (data.length === 0) {
+                    showToast('No data to export.', 'info');
+                    return;
+                }
+
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('PRI Dashboard Export');
+
+                // Header
+                const headers = ['C_Number', 'Title', 'Customer', 'Dept', 'Status', 'Total Minutes'];
+                const headerRow = worksheet.addRow(headers);
+                headerRow.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+                    cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+                    cell.alignment = { horizontal: 'center' };
+                });
+
+                // Rows
+                data.forEach(item => {
+                    worksheet.addRow([
+                        item.cNumber || '-',
+                        item.title || '-',
+                        item.customer || '-',
+                        item.dept || '-',
+                        item.badgeStatus || item.displayStatus || '-',
+                        Number(item.total_minutes) || 0
+                    ]);
+                });
+
+                // Styling
+                worksheet.getColumn(1).width = 15;
+                worksheet.getColumn(2).width = 30;
+                worksheet.getColumn(3).width = 20;
+                worksheet.getColumn(4).width = 15;
+                worksheet.getColumn(5).width = 15;
+                worksheet.getColumn(6).width = 15;
+
+                const fileName = `PRI_Dashboard_Export_${new Date().toISOString().split('T')[0]}`;
+                const buffer = await workbook.xlsx.writeBuffer();
+                saveAs(new Blob([buffer]), `${fileName}.xlsx`);
+                showToast('Export successful.', 'success');
+            } catch (err) {
+                console.error('Table export error:', err);
+                showToast('Export failed: ' + err.message, 'error');
+            }
+        }
+
         async function exportToPDF() {
             if (!state.selectedRequest) return;
             const item = state.selectedRequest;
@@ -3400,12 +3464,26 @@
             state.filterValues.style = document.getElementById('filter-style')?.value.trim() || '';
             state.filterValues.customer = document.getElementById('filter-customer')?.value.trim() || '';
             state.filterValues.pmPl = document.getElementById('filter-pmPl')?.value.trim() || '';
+            updateClearFilterVisibility();
             toggleFilter(false);
             renderTable();
         }
 
+        function isFilterApplied() {
+            const f = state.filterValues;
+            return !!(f.number || f.style || f.customer || f.pmPl);
+        }
+
+        function updateClearFilterVisibility() {
+            const clearBtn = document.getElementById('clear-filter-btn');
+            if (!clearBtn) return;
+            clearBtn.style.display = isFilterApplied() ? 'inline-flex' : 'none';
+        }
+
         function clearFilters() {
             state.filterValues = { number: '', style: '', customer: '', pmPl: '' };
+            const navSearch = document.getElementById('nav-search');
+            if (navSearch) navSearch.value = '';
             syncFilterInputsFromState();
             renderTable();
         }
