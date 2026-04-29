@@ -1420,6 +1420,68 @@
     .pri-filter-combobox__list {
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12);
     }
+
+    /* Fabric Table Styling */
+    .fabric-table-wrap {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        margin-top: 12px;
+        margin-bottom: 24px;
+        overflow: hidden;
+        background: #f8fafc;
+    }
+    .fabric-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f1f5f9;
+    }
+    .fabric-table-title {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: var(--primary-color);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+    .fabric-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+    .fabric-table th, .fabric-table td {
+        border-right: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 10px 12px;
+        font-size: 0.82rem;
+        text-align: left;
+    }
+    .fabric-table th {
+        background: #f8fafc;
+        color: #64748b;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+    }
+    .fabric-table td {
+        background: #fff;
+        color: #1e293b;
+    }
+    .fabric-table tr:last-child td { border-bottom: none; }
+    .fabric-table th:last-child, .fabric-table td:last-child { border-right: none; }
+    .fabric-opt-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: var(--primary-color);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
 </style>
 
 <body>
@@ -1554,9 +1616,9 @@
                                 <thead>
                                     <tr>
                                         <th>C_Number</th>
-                                        <th>Title</th>
+                                        <th>Customer_Ref</th>
                                         <th>Customer</th>
-                                        <th>Dept</th>
+                                        <th>Customer Department</th>
                                         <th>Status</th>
                                         <th style="text-align: center;">Action</th>
                                     </tr>
@@ -1613,6 +1675,7 @@
                 </div>
                 <div class="p-5 space-y-5 max-h-[min(70vh,720px)] overflow-y-auto custom-scrollbar">
                     <div id="request-details-content"></div>
+                    <div id="pri-fabric-details-container"></div>
                     <div id="pri-calculation-section">
                         <div class="text-[11px] font-extrabold text-[#6C757D] uppercase tracking-[0.12em] mb-3">PRI
                             Calculation</div>
@@ -2124,11 +2187,10 @@
 
             let inner = '';
             inner += rowPlain('Request ID', pickField(item, ['c_number', 'C_Number', 'request_id'], item.c_number || '—'));
+            inner += rowPlain('Customer_Ref', pickField(item, ['title', 'pri_name', 'style', 'style_name', 'request_title'], '—'));
             inner += rowPlain('Customer', pickField(item, ['customer', 'cust_name', 'Customer'], '—'));
-            inner += rowPlain('Cus Dept', pickField(item, ['cust_dept', 'dept', 'cus_dept', 'Cus_Dept'], '—'));
-            inner += rowPlain('TKL Season', tkl || '—');
-            inner += rowPlain('Main Fabric', mainFab || '—');
-            inner += rowPlain('Fabric Header', fabHdr || '—');
+            inner += rowPlain('Customer Department', pickField(item, ['cust_dept', 'dept', 'cus_dept', 'Cus_Dept'], '—'));
+            inner += rowPlain('Season', tkl || '—');
             inner += rowPlain('PL Name', plNm || '—');
 
             if (showPriExtras) {
@@ -2617,9 +2679,9 @@
                     galleryContainer.innerHTML = `
                 <div class="pattern-gallery-row pattern-gallery-row--head">
                     <div>Request ID</div>
-                    <div>Title</div>
+                    <div>Customer_Ref</div>
                     <div>Customer</div>
-                    <div>Dept</div>
+                    <div>Customer Department</div>
                     <div>Status</div>
                     <div style="text-align:right;">Action</div>
                 </div>
@@ -2654,9 +2716,9 @@
                 galleryContainer.innerHTML = `
             <div class="pattern-gallery-row pattern-gallery-row--head">
                 <div>Request ID</div>
-                <div>Title</div>
+                <div>Customer_Ref</div>
                 <div>Customer</div>
-                <div>Dept</div>
+                <div>Customer Department</div>
                 <div>Status</div>
                 <div style="text-align:right;">Action</div>
             </div>
@@ -2697,6 +2759,80 @@
         <i data-lucide="${icons[status] || 'clock'}" class="w-2.5 h-2.5"></i>
         ${status}
     </div>`;
+        }
+
+        function renderFabricDetails(row, targetContainerId = 'pri-fabric-details-container') {
+            const container = document.getElementById(targetContainerId);
+            if (!container) return;
+            container.innerHTML = '';
+
+            const rawAddOns = row['fabric_add_ons'] || row.fabric_add_ons || row['Fabric Add Ons'] || row.Fabric_Add_Ons || '';
+            let fabricRows = [];
+
+            if (rawAddOns && String(rawAddOns).startsWith('[')) {
+                try {
+                    fabricRows = JSON.parse(rawAddOns);
+                } catch (e) {
+                    console.error("Fabric JSON parse error", e);
+                }
+            }
+
+            if (!Array.isArray(fabricRows) || fabricRows.length === 0) {
+                const mainFabric = row.main_fabric || row.Main_Fabric || row.fabric_add_ons || '';
+                if (mainFabric && mainFabric !== '-' && mainFabric !== '') {
+                    fabricRows = [{ opt: 'A', fabric: mainFabric, type: '', gms: '', composition: '', width: '', header: row.Fabric_Header || '' }];
+                }
+            }
+
+            if (!Array.isArray(fabricRows) || fabricRows.length === 0) {
+                return; // Don't show anything if no fabric data
+            }
+
+            const columns = [
+                { key: "opt", label: "OPT", width: "45px" },
+                { key: "type", label: "Type", width: "" },
+                { key: "fabric", label: "Fabric Name", width: "" },
+                { key: "gms", label: "GMS", width: "70px" },
+                { key: "composition", label: "Composition", width: "" },
+                { key: "width", label: "Width", width: "70px" },
+                { key: "header", label: "Header", width: "" }
+            ];
+
+            const activeCols = columns.filter(col => {
+                if (col.key === 'opt' || col.key === 'fabric') return true;
+                return fabricRows.some(r => {
+                    const v = r[col.key];
+                    return v != null && String(v).trim() !== '' && String(v).trim() !== '-' && String(v).trim().toLowerCase() !== 'undefined';
+                });
+            });
+
+            const tableHtml = `
+                <div class="fabric-table-wrap">
+                    <div class="fabric-table-toolbar">
+                        <span class="fabric-table-title">Fabric Details</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="fabric-table">
+                            <thead>
+                                <tr>
+                                    ${activeCols.map(c => `<th style="width: ${c.width}">${c.label}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${fabricRows.map(r => `
+                                    <tr>
+                                        ${activeCols.map(c => {
+                                            const val = r[c.key] || '-';
+                                            if (c.key === 'opt') return `<td><div class="fabric-opt-chip">${val}</div></td>`;
+                                            return `<td>${val}</td>`;
+                                        }).join('')}
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            container.innerHTML = tableHtml;
         }
 
         // Calendar Logic
@@ -2972,6 +3108,9 @@
             }
             state.priDetails = [...initialDetails];
             const effectiveStatus = getEffectivePRIStatus(item);
+
+            // Render Fabric Details Table
+            renderFabricDetails(item);
 
             // Update Title and Toggle Sections
             document.getElementById('request-details-title').textContent = isPRI ? 'Request Details' : 'Request Information';
