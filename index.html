@@ -2386,6 +2386,16 @@
                 .replace(/"/g, '&quot;');
         }
 
+        function formatDisplayDate(dateStr) {
+            if (!dateStr || String(dateStr).trim() === '—' || String(dateStr).trim() === '-' || String(dateStr).trim() === '') return '—';
+            const d = parseDateString(dateStr);
+            if (!d || isNaN(d.getTime())) return String(dateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
         /**
          * Photo-style request detail card: fields + Folder Path with "Open Folder" link (no top SharePoint banner).
          * @param {object} options.showPriExtras — include PRI Uploaded / Overdue / Due / Total Minutes (Complete view).
@@ -2410,8 +2420,8 @@
             const customer = pickField(item, ['customer', 'cust_name', 'Customer'], '—');
             const customerDept = pickField(item, ['customer_department', 'Customer_Department', 'Customer Department', 'cust_dept', 'dept', 'cus_dept', 'Cus_Dept'], '—');
             const createdBy = pickField(item, ['createdby', 'created_by', 'Created By'], '—');
-            const createdDate = pickField(item, ['created', 'created_at', 'requested_date', 'req_date'], '—');
-            const modifiedDate = pickField(item, ['modified', 'modified_at', 'prilastsavedat', 'pri_last_saved_at'], '—');
+            const createdDate = formatDisplayDate(pickField(item, ['created', 'created_at', 'requested_date', 'req_date'], '—'));
+            const modifiedDate = formatDisplayDate(pickField(item, ['modified', 'modified_at', 'prilastsavedat', 'pri_last_saved_at'], '—'));
 
             let html = `<div class="form-grid">`;
             html += card('Request ID', requestId);
@@ -2850,7 +2860,7 @@
                 const cNumber = String(pickField(safeItem, ['c_number', 'C_Number', 'request_id', 'id'], '')).trim();
                 const title = pickField(safeItem, ['title', 'pri_name', 'style', 'style_name', 'request_title'], 'N/A');
                 const customer = pickField(safeItem, ['customer', 'cust_name', 'customer_name'], '-');
-                const dept = pickField(safeItem, ['cust_dept', 'dept', 'department', 'cus_dept'], '-');
+                const dept = pickField(safeItem, ['customer_department', 'customerdepartment', 'Customer Department', 'cust_dept', 'dept', 'department', 'cus_dept'], '-');
                 const plPmSearch = [
                     pickField(safeItem, ['pl_name', 'PL_Name', 'pl name']),
                     pickField(safeItem, ['pm_name', 'pm_name_pl', 'PM_Name', 'pm name']),
@@ -3343,7 +3353,6 @@
             if (isPRI && effectiveStatus === 'Complete') {
                 content.innerHTML = `
             ${buildPriRequestDetailsCardHtml(item, { showPriExtras: true, statusValue: effectiveStatus })}
-            ${buildPriDownloadButtonsHtml()}
         `;
             } else if (isPRI) {
                 content.innerHTML = `
@@ -3352,7 +3361,6 @@
             } else {
                 content.innerHTML = `
             ${buildPriRequestDetailsCardHtml(item, { showPriExtras: false, statusValue: getEffectivePRIStatus(item) })}
-            ${buildPriDownloadButtonsHtml()}
         `;
             }
 
