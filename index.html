@@ -2420,8 +2420,8 @@
             const customer = pickField(item, ['customer', 'cust_name', 'Customer'], '—');
             const customerDept = pickField(item, ['customer_department', 'Customer_Department', 'Customer Department', 'cust_dept', 'dept', 'cus_dept', 'Cus_Dept'], '—');
             const createdBy = pickField(item, ['createdby', 'created_by', 'Created By'], '—');
-            const createdDate = formatDisplayDate(pickField(item, ['created', 'created_at', 'requested_date', 'req_date'], '—'));
-            const modifiedDate = formatDisplayDate(pickField(item, ['modified', 'modified_at', 'prilastsavedat', 'pri_last_saved_at'], '—'));
+            const createdDate = formatDisplayDate(pickField(item, ['created', 'created_at', 'requested_date', 'req_date', 'Created'], '—'));
+            const modifiedDate = formatDisplayDate(pickField(item, ['modified', 'modified_at', 'Modified', 'prilastsavedat', 'pri_last_saved_at'], '—'));
 
             let html = `<div class="form-grid">`;
             html += card('Request ID', requestId);
@@ -3596,6 +3596,8 @@
                         completed_at: dataToSave.completedat,
                         priuploadeddate: dataToSave.priuploadeddate,
                         pri_uploaded_date: dataToSave.priuploadeddate,
+                        modified: dataToSave.modified,
+                        modified_at: dataToSave.modified,
                         prilastsavedat: dataToSave.prilastsavedat,
                         pri_last_saved_at: dataToSave.prilastsavedat
                     };
