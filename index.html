@@ -2047,12 +2047,21 @@
                 return false;
             }
             try {
-                const user = JSON.parse(session);
-                document.getElementById('dropdown-name').textContent = user.name || 'User';
-                document.getElementById('dropdown-email').textContent = user.email || '---';
-                const avatar = document.getElementById('user-avatar');
-                if (avatar) {
-                    avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=2563eb&color=fff`;
+                const userData = JSON.parse(session);
+                if (userData) {
+                    const name = userData.username || userData.name || userData.loginId || userData.loginID || (userData.user && (userData.user.name || userData.user.username)) || 'User';
+                    const email = userData.email || userData.loginId || userData.loginID || (userData.user && userData.user.email) || '---';
+                    
+                    const dName = document.getElementById('dropdown-name');
+                    const dEmail = document.getElementById('dropdown-email');
+                    const avatar = document.getElementById('user-avatar');
+                    
+                    if (dName) dName.textContent = name;
+                    if (dEmail) dEmail.textContent = email;
+                    if (avatar) {
+                        avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&bold=true`;
+                        avatar.alt = name;
+                    }
                 }
             } catch (e) {
                 console.error('Error parsing session:', e);
