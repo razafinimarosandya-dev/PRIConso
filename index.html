@@ -2232,36 +2232,46 @@
         // Helper: Parse Date
         function parseDateString(dateStr) {
             if (!dateStr || String(dateStr).trim() === '-' || String(dateStr).trim() === '—' || String(dateStr).trim() === '') return new Date(NaN);
-            if (dateStr instanceof Date) return dateStr;
 
-            let str = String(dateStr).trim();
-            
-            // Handle ISO string by taking only the date part to avoid UTC shifts
-            if (str.includes('T')) {
-                str = str.split('T')[0];
+            let year, month, day;
+
+            if (dateStr instanceof Date) {
+                year = dateStr.getFullYear();
+                month = dateStr.getMonth();
+                day = dateStr.getDate();
+            } else {
+                // Take only the date portion, ignore time/timezone suffixes
+                let str = String(dateStr).trim().split(/[T ]/)[0];
+
+                // Check DD/MM/YYYY
+                let m = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+                if (m) {
+                    day = parseInt(m[1], 10);
+                    month = parseInt(m[2], 10) - 1;
+                    year = parseInt(m[3], 10);
+                } else {
+                    // Check YYYY-MM-DD
+                    m = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+                    if (m) {
+                        year = parseInt(m[1], 10);
+                        month = parseInt(m[2], 10) - 1;
+                        day = parseInt(m[3], 10);
+                    }
+                }
             }
 
-            // DD/MM/YYYY or DD-MM-YYYY
-            const dmyMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
-            if (dmyMatch) {
-                const day = parseInt(dmyMatch[1], 10);
-                const month = parseInt(dmyMatch[2], 10) - 1;
-                const year = parseInt(dmyMatch[3], 10);
-                // Force midday to avoid any TZ edge cases jumping to previous/next day
-                return new Date(year, month, day, 12, 0, 0);
+            if (year !== undefined && !isNaN(year)) {
+                // Reconstruct as local midday to be immune to TZ shifts
+                const d = new Date(year, month, day, 12, 0, 0);
+                return isNaN(d.getTime()) ? new Date(NaN) : d;
             }
 
-            // YYYY-MM-DD (ISO style)
-            const isoMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-            if (isoMatch) {
-                const year = parseInt(isoMatch[1], 10);
-                const month = parseInt(isoMatch[2], 10) - 1;
-                const day = parseInt(isoMatch[3], 10);
-                return new Date(year, month, day, 12, 0, 0);
+            // Final fallback for unusual formats
+            const fallback = new Date(dateStr);
+            if (!isNaN(fallback.getTime())) {
+                return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate(), 12, 0, 0);
             }
-
-            const fallback = new Date(str);
-            return isNaN(fallback.getTime()) ? new Date(NaN) : fallback;
+            return new Date(NaN);
         }
 
         function normalizePRIStatus(statusVal) {
