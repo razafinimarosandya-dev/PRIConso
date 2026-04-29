@@ -1482,6 +1482,47 @@
         font-size: 0.75rem;
         font-weight: 700;
     }
+
+    /* Premium Detail Grid Styles (Synced with Pattern.html) */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .detail-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .detail-card:hover {
+        border-color: #cbd5e1;
+        background: #f1f5f9;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .detail-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: capitalize;
+        letter-spacing: 0.01em;
+        margin-bottom: 2px;
+    }
+
+    .detail-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1e293b;
+        word-break: break-word;
+    }
 </style>
 
 <body>
@@ -2165,57 +2206,53 @@
          * @param {object} options.showPriExtras — include PRI Uploaded / Overdue / Due / Total Minutes (Complete view).
          */
         function buildPriRequestDetailsCardHtml(item, options = {}) {
-            const { statusValue, showPriExtras = false, extraRows = [] } = options;
+            const { statusValue, showPriExtras = false } = options;
             const url = buildPriFolderUrl(item);
             const status = statusValue != null ? statusValue : getEffectivePRIStatus(item);
 
-            const val = (v) => escapeHtmlText(v === undefined || v === null || String(v).trim() === '' ? '—' : v);
+            const val = (v) => (v === undefined || v === null || String(v).trim() === '' ? '—' : String(v));
 
-            const row = (label, valueHtml) => `
-        <div class="flex items-start justify-between py-3 gap-4">
-            <span class="text-[13px] font-medium text-[#6C757D] shrink-0">${escapeHtmlText(label)}</span>
-            <span class="text-[13px] font-bold text-[#212529] text-right ml-4 break-words">${valueHtml}</span>
-        </div>`;
-
-            const rowPlain = (label, value) => row(label, val(value));
-            const rowStatus = (label, value) => row(label, `<span class="font-extrabold">${val(value)}</span>`);
+            const card = (label, value, isRemark = false) => `
+                <div class="detail-card" ${isRemark ? 'style="grid-column: 1 / -1;"' : ''}>
+                    <span class="detail-label">${label}</span>
+                    <div class="detail-value">${val(value)}</div>
+                </div>`;
 
             const tkl = pickField(item, ['tkl_season', 'tkl_season_', 'season', 'TKL_Season', 'tkl season'], '');
-            const mainFab = pickField(item, ['main_fabric', 'main_fabric_', 'Main_Fabric', 'main fabric'], '');
-            const fabHdr = pickField(item, ['fabric_header', 'fabric_header_', 'Fabric Header', 'fabric header'], '');
             const plNm = pickField(item, ['pl_name', 'PL_Name', 'PL_name', 'Pl_Name', 'assignee', 'pm_name', 'PM_Name'], '');
+            const requestId = pickField(item, ['c_number', 'C_Number', 'request_id'], item.c_number || '—');
+            const customerRef = pickField(item, ['title', 'pri_name', 'style', 'style_name', 'request_title'], '—');
+            const customer = pickField(item, ['customer', 'cust_name', 'Customer'], '—');
+            const customerDept = pickField(item, ['customer_department', 'Customer_Department', 'Customer Department', 'cust_dept', 'dept', 'cus_dept', 'Cus_Dept'], '—');
+            const createdBy = typeof item.created_by === 'object' ? (item.created_by?.name || item.created_by?.email || '—') : (item.created_by || '—');
 
-            let inner = '';
-            inner += rowPlain('Request ID', pickField(item, ['c_number', 'C_Number', 'request_id'], item.c_number || '—'));
-            inner += rowPlain('Customer_Ref', pickField(item, ['title', 'pri_name', 'style', 'style_name', 'request_title'], '—'));
-            inner += rowPlain('Customer', pickField(item, ['customer', 'cust_name', 'Customer'], '—'));
-            inner += rowPlain('Customer Department', pickField(item, ['cust_dept', 'dept', 'cus_dept', 'Cus_Dept'], '—'));
-            inner += rowPlain('Season', tkl || '—');
-            inner += rowPlain('PL Name', plNm || '—');
-
+            let html = `<div class="form-grid">`;
+            html += card('Request ID', requestId);
+            html += card('Customer_Ref', customerRef);
+            html += card('Customer', customer);
+            html += card('Customer Department', customerDept);
+            html += card('Season', tkl);
+            html += card('PL Name', plNm);
+            
             if (showPriExtras) {
                 const tm = item.totalminutes ?? item.total_minutes;
-                inner += rowPlain('Total Minutes', tm != null ? String(tm) : '0');
+                html += card('Total Minutes', tm != null ? String(tm) : '0');
             }
 
-            inner += rowStatus('Status', status);
-
-            inner += rowPlain('Created By', typeof item.created_by === 'object' ? (item.created_by?.name || item.created_by?.email || '—') : (item.created_by || '—'));
-
-            inner += `
-        <div class="flex items-start justify-between py-3 gap-4">
-            <span class="text-[13px] font-medium text-[#6C757D] shrink-0">Folder Path</span>
-            <a href="${escapeHtmlAttr(url)}" target="_blank" rel="noopener noreferrer" class="text-[13px] font-bold text-primary underline hover:text-primary/80 shrink-0 text-right">Open Folder</a>
-        </div>`;
-
-            extraRows.forEach(({ label, value }) => {
-                inner += rowPlain(label, value);
-            });
-
-            return `
-        <div class="space-y-0 divide-y divide-[#F1F3F5] bg-white rounded-xl border border-[#E9ECEF] px-4 py-1">
-            ${inner}
-        </div>`;
+            html += card('Status', status);
+            html += card('Created By', createdBy);
+            
+            // Folder Path Card (Full width)
+            html += `
+                <div class="detail-card" style="grid-column: 1 / -1;">
+                    <span class="detail-label">Folder Path</span>
+                    <div class="detail-value">
+                        <a href="${escapeHtmlAttr(url)}" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:text-primary/80">Open Folder</a>
+                    </div>
+                </div>`;
+            
+            html += `</div>`;
+            return html;
         }
 
         function buildPriDownloadButtonsHtml() {
