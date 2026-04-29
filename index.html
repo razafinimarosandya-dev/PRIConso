@@ -245,6 +245,125 @@
         box-shadow: var(--shadow-md);
     }
 
+    /* Profile Dropdown Styles */
+    .profile-container {
+        position: relative;
+        cursor: pointer;
+    }
+
+    .profile-pic img {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+    }
+
+    .profile-container:hover .profile-pic img {
+        transform: scale(1.05);
+    }
+
+    .user-dropdown {
+        position: absolute;
+        top: calc(100% + 12px);
+        right: 0;
+        width: 260px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 12px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        padding: 8px;
+        z-index: 1001;
+        display: none;
+        flex-direction: column;
+        animation: slideInDown 0.2s ease-out;
+    }
+
+    .user-dropdown.active {
+        display: flex;
+    }
+
+    .dropdown-header {
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        text-align: left;
+    }
+
+    .profile-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .profile-email {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #64748b;
+        word-break: break-all;
+    }
+
+    .profile-divider {
+        height: 1px;
+        background-color: #f1f5f9;
+        margin: 4px 0;
+    }
+
+    .dropdown-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #1e293b;
+        cursor: pointer;
+        transition: background 0.2s;
+        text-align: left;
+        text-decoration: none;
+    }
+
+    .dropdown-item:hover {
+        background-color: #f1f5f9;
+        color: #3b82f6;
+    }
+
+    .dropdown-item i,
+    .dropdown-item svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2.5px;
+    }
+
+    .sign-out-btn {
+        color: #ef4444 !important;
+        font-weight: 600;
+    }
+
+    .sign-out-btn:hover {
+        background-color: #fef2f2 !important;
+    }
+
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     /* Main Content */
     .main-content {
         flex: 1;
@@ -1558,13 +1677,34 @@
             </div>
             <div class="nav-right">
                 <button class="icon-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
+                    <i data-lucide="bell" class="w-5 h-5"></i>
                 </button>
-                <img class="avatar" src="https://i.pravatar.cc/150?u=pri_user" alt="User" />
+                <div class="profile-container" id="profile-trigger">
+                    <div class="profile-pic">
+                        <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=2563eb&color=fff"
+                            alt="User Profile" />
+                    </div>
+
+                    <div class="user-dropdown" id="user-dropdown">
+                        <div class="dropdown-header">
+                            <span class="profile-name" id="dropdown-name">Welcome</span>
+                            <span class="profile-email" id="dropdown-email">---</span>
+                        </div>
+                        <div class="profile-divider"></div>
+
+                        <a href="#" onclick="redirectTo('https://costing-home.vercel.app/')" class="dropdown-item">
+                            <i data-lucide="home"></i>
+                            <span>Dashboard Home</span>
+                        </a>
+
+                        <div class="profile-divider"></div>
+
+                        <button type="button" class="dropdown-item sign-out-btn" id="sign-out-btn" onclick="signOut()">
+                            <i data-lucide="log-out"></i>
+                            <span>Sign Out</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </nav>
 
@@ -1882,13 +2022,84 @@
         };
         let calCurrentDate = new Date();
 
-        try {
-            if (window.lucide) {
-                window.lucide.createIcons();
+        const LOGIN_PAGE_URL = "https://costing-app-beta.vercel.app/";
+
+        function checkAuth() {
+            consumeUrlSession();
+            const session = localStorage.getItem('ACC_REMEMBERED_USER');
+            if (!session) {
+                window.location.href = LOGIN_PAGE_URL;
+                return false;
             }
-            fetchData();
-            updateStats();
-            renderTable();
+            try {
+                const user = JSON.parse(session);
+                document.getElementById('dropdown-name').textContent = user.name || 'User';
+                document.getElementById('dropdown-email').textContent = user.email || '---';
+                const avatar = document.getElementById('user-avatar');
+                if (avatar) {
+                    avatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=2563eb&color=fff`;
+                }
+            } catch (e) {
+                console.error('Error parsing session:', e);
+            }
+            return true;
+        }
+
+        function consumeUrlSession() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const querySession = urlParams.get('session');
+            if (querySession) {
+                try {
+                    const decodedData = JSON.parse(decodeURIComponent(escape(atob(querySession))));
+                    if (decodedData && decodedData.email) {
+                        localStorage.setItem('ACC_REMEMBERED_USER', JSON.stringify(decodedData));
+                        window.history.replaceState(null, null, window.location.pathname);
+                        return true;
+                    }
+                } catch (e) { console.error('Session parse error:', e); }
+            }
+            return false;
+        }
+
+        function redirectTo(url) {
+            const sessionData = localStorage.getItem('ACC_REMEMBERED_USER');
+            if (sessionData) {
+                const encodedSession = btoa(unescape(encodeURIComponent(sessionData)));
+                const separator = url.includes('?') ? '&' : '?';
+                window.location.href = `${url}${separator}session=${encodedSession}`;
+            } else {
+                window.location.href = url;
+            }
+        }
+
+        function signOut() {
+            localStorage.removeItem('ACC_REMEMBERED_USER');
+            window.location.href = LOGIN_PAGE_URL;
+        }
+
+        try {
+            if (checkAuth()) {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+
+                // Dropdown toggle logic
+                const trigger = document.getElementById('profile-trigger');
+                const dropdown = document.getElementById('user-dropdown');
+                if (trigger && dropdown) {
+                    trigger.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        dropdown.classList.toggle('active');
+                    });
+                    document.addEventListener('click', () => {
+                        dropdown.classList.remove('active');
+                    });
+                }
+
+                fetchData();
+                updateStats();
+                renderTable();
+            }
         } catch (e) {
             document.body.innerHTML = '<h1>INITIALIZATION ERROR</h1><pre>' + e.stack + '</pre>';
         }
