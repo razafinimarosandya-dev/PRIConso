@@ -2931,7 +2931,7 @@
                 return;
             }
 
-            tbody.innerHTML = filtered.map(item => `
+            tbody.innerHTML = [...filtered].reverse().map(item => `
         <tr class="hover:bg-[#FBFBFC] transition-colors group">
             <td class="px-4 py-3 text-[13px] font-bold text-primary">${item.cNumber || '-'}</td>
             <td class="px-4 py-3 text-[13px] text-[#495057] font-medium">${item.title}</td>
