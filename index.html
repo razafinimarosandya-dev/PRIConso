@@ -1549,6 +1549,7 @@
         overflow: hidden;
         background: #f8fafc;
     }
+
     .fabric-table-toolbar {
         display: flex;
         align-items: center;
@@ -1557,6 +1558,7 @@
         border-bottom: 1px solid #e2e8f0;
         background: #f1f5f9;
     }
+
     .fabric-table-title {
         font-size: 0.75rem;
         font-weight: 800;
@@ -1564,18 +1566,22 @@
         text-transform: uppercase;
         letter-spacing: 0.08em;
     }
+
     .fabric-table {
         width: 100%;
         border-collapse: collapse;
         table-layout: fixed;
     }
-    .fabric-table th, .fabric-table td {
+
+    .fabric-table th,
+    .fabric-table td {
         border-right: 1px solid #e2e8f0;
         border-bottom: 1px solid #e2e8f0;
         padding: 10px 12px;
         font-size: 0.82rem;
         text-align: left;
     }
+
     .fabric-table th {
         background: #f8fafc;
         color: #64748b;
@@ -1583,12 +1589,21 @@
         text-transform: uppercase;
         font-size: 0.7rem;
     }
+
     .fabric-table td {
         background: #fff;
         color: #1e293b;
     }
-    .fabric-table tr:last-child td { border-bottom: none; }
-    .fabric-table th:last-child, .fabric-table td:last-child { border-right: none; }
+
+    .fabric-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .fabric-table th:last-child,
+    .fabric-table td:last-child {
+        border-right: none;
+    }
+
     .fabric-opt-chip {
         display: inline-flex;
         align-items: center;
@@ -1874,8 +1889,8 @@
                     </div>
                 </div>
             </div>
-            </div>
         </div>
+    </div>
     </div>
 
     <!-- Advanced Filter modal -->
@@ -2394,7 +2409,9 @@
             const customerRef = pickField(item, ['title', 'pri_name', 'style', 'style_name', 'request_title'], '—');
             const customer = pickField(item, ['customer', 'cust_name', 'Customer'], '—');
             const customerDept = pickField(item, ['customer_department', 'Customer_Department', 'Customer Department', 'cust_dept', 'dept', 'cus_dept', 'Cus_Dept'], '—');
-            const createdBy = typeof item.created_by === 'object' ? (item.created_by?.name || item.created_by?.email || '—') : (item.created_by || '—');
+            const createdBy = pickField(item, ['createdby', 'created_by', 'Created By'], '—');
+            const createdDate = pickField(item, ['created', 'created_at', 'requested_date', 'req_date'], '—');
+            const modifiedDate = pickField(item, ['modified', 'modified_at', 'prilastsavedat', 'pri_last_saved_at'], '—');
 
             let html = `<div class="form-grid">`;
             html += card('Request ID', requestId);
@@ -2403,7 +2420,7 @@
             html += card('Customer Department', customerDept);
             html += card('Season', tkl);
             html += card('PL Name', plNm);
-            
+
             if (showPriExtras) {
                 const tm = item.totalminutes ?? item.total_minutes;
                 html += card('Total Minutes', tm != null ? String(tm) : '0');
@@ -2411,7 +2428,9 @@
 
             html += card('Status', status);
             html += card('Created By', createdBy);
-            
+            html += card('Created', createdDate);
+            html += card('Modified', modifiedDate);
+
             // Folder Path Card (Full width)
             html += `
                 <div class="detail-card" style="grid-column: 1 / -1;">
@@ -2420,7 +2439,7 @@
                         <a href="${escapeHtmlAttr(url)}" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:text-primary/80">Open Folder</a>
                     </div>
                 </div>`;
-            
+
             html += `</div>`;
             return html;
         }
@@ -3029,10 +3048,10 @@
                                 ${fabricRows.map(r => `
                                     <tr>
                                         ${activeCols.map(c => {
-                                            const val = r[c.key] || '-';
-                                            if (c.key === 'opt') return `<td><div class="fabric-opt-chip">${val}</div></td>`;
-                                            return `<td>${val}</td>`;
-                                        }).join('')}
+                const val = r[c.key] || '-';
+                if (c.key === 'opt') return `<td><div class="fabric-opt-chip">${val}</div></td>`;
+                return `<td>${val}</td>`;
+            }).join('')}
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -3502,9 +3521,14 @@
                 status: newStatus,
                 totalminutes: total,
                 total_minutes: total,
+                modified: now.toISOString(),
+                modified_at: now.toISOString(),
                 completedat: shouldComplete ? now.toISOString() : (state.selectedRequest.completedat || ''),
-                priuploadeddate: (shouldComplete || !state.selectedRequest.priuploadeddate) ? formattedDate : state.selectedRequest.priuploadeddate,
-                prilastsavedat: now.toISOString()
+                completed_at: shouldComplete ? now.toISOString() : (state.selectedRequest.completed_at || ''),
+                priuploadeddate: shouldComplete ? formattedDate : (state.selectedRequest.priuploadeddate || ''),
+                pri_uploaded_date: shouldComplete ? formattedDate : (state.selectedRequest.pri_uploaded_date || ''),
+                prilastsavedat: now.toISOString(),
+                pri_last_saved_at: now.toISOString()
             };
 
             // Clean up for People Chip compatibility but KEEP created_by for identification if needed
