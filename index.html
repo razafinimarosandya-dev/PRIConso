@@ -1717,20 +1717,6 @@
                 <div class="p-5 space-y-5 max-h-[min(70vh,720px)] overflow-y-auto custom-scrollbar">
                     <div id="request-details-content"></div>
                     <div id="pri-fabric-details-container"></div>
-                    <div id="pri-calculation-section">
-                        <div class="text-[11px] font-extrabold text-[#6C757D] uppercase tracking-[0.12em] mb-3">PRI
-                            Calculation</div>
-                        <div id="pri-calculation-rows" class="space-y-3"></div>
-                        <button type="button" onclick="addPRIDetailRow()"
-                            class="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#DEE2E6] rounded-lg text-[12px] font-semibold text-[#6C757D] hover:border-primary hover:text-primary hover:bg-[#EEF2FF] transition-all mt-3">
-                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Row
-                        </button>
-                        <div
-                            class="flex items-center justify-between mt-4 p-4 bg-[#F8F9FA] rounded-xl border border-[#E9ECEF]">
-                            <span class="text-[13px] font-bold text-[#495057]">Total Minutes</span>
-                            <span id="pri-details-total" class="text-2xl font-black text-primary tabular-nums">0</span>
-                        </div>
-                    </div>
                 </div>
                 <div id="pri-action-buttons"
                     class="p-5 bg-white border-t border-[#F1F3F5] flex flex-wrap justify-end items-center gap-3 shrink-0">
@@ -1748,32 +1734,6 @@
                     </div>
                 </div>
             </div>
-            <div id="request-details-success-view"
-                class="hidden w-full flex flex-col items-center justify-center px-6 py-10 sm:px-10 text-center flex-1 min-h-0 overflow-y-auto">
-                <div class="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-5 shrink-0">
-                    <i data-lucide="check-circle-2" class="w-9 h-9 text-emerald-600 stroke-[2.5]"></i>
-                </div>
-                <h3 class="text-xl font-bold text-[#212529] mb-2">PRI Details Saved!</h3>
-                <p class="text-sm text-[#6C757D] mb-8 leading-relaxed max-w-md">
-                    Your calculation has been saved. Choose an export format to complete the request and notify the
-                    requester.
-                </p>
-                <div class="flex flex-col sm:flex-row gap-3 w-full max-w-lg">
-                    <button type="button" onclick="exportAndComplete('excel')"
-                        class="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-emerald-700 text-white font-bold text-sm hover:bg-emerald-800 transition-all shadow-sm">
-                        <i data-lucide="file-spreadsheet" class="w-4 h-4 shrink-0"></i>
-                        Export as Excel
-                    </button>
-                    <button type="button" onclick="exportAndComplete('pdf')"
-                        class="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-all shadow-sm">
-                        <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
-                        Export as PDF
-                    </button>
-                </div>
-                <button type="button" onclick="dismissPriSavedSuccess()"
-                    class="mt-8 text-sm font-medium text-[#94a3b8] hover:text-[#64748b] transition-colors">
-                    Maybe Later
-                </button>
             </div>
         </div>
     </div>
@@ -1913,7 +1873,6 @@
             filterValues: { number: '', style: '', customer: '', pmPl: '' },
             filteredData: [],
             filterOptions: { number: [], style: [], customer: [], pmPl: [] },
-            priDetails: [{ detail: '', minutes: 0 }],
             fetchError: null,
             selectedFileUrl: null,
             isSaved: true,
@@ -3094,17 +3053,7 @@
         }
 
         /** Restore PRI form + hide export success (same overlay) */
-        function resetPriModalSteps() {
-            const main = document.getElementById('request-details-main-view');
-            const success = document.getElementById('request-details-success-view');
-            if (main) {
-                main.classList.remove('hidden', 'pri-modal-main--hidden');
-            }
-            if (success) {
-                success.classList.add('hidden');
-                success.classList.remove('pri-modal-success--visible');
-            }
-        }
+        function resetPriModalSteps() { }
 
         function openRequestDetailsModal(cNumber, isPRI = false, dataIndex) {
             let item = null;
@@ -3130,20 +3079,6 @@
             if (!item) return;
 
             state.selectedRequest = item;
-
-            // Parse pri_details if it's a string (from Google Sheet or previous save)
-            let initialDetails = [{ detail: '', minutes: 0 }];
-            if (item.pri_details) {
-                try {
-                    const parsed = typeof item.pri_details === 'string' ? JSON.parse(item.pri_details) : item.pri_details;
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        initialDetails = parsed;
-                    }
-                } catch (e) {
-                    console.error('Error parsing pri_details:', e);
-                }
-            }
-            state.priDetails = [...initialDetails];
             const effectiveStatus = getEffectivePRIStatus(item);
 
             // Render Fabric Details Table
@@ -3151,29 +3086,24 @@
 
             // Update Title and Toggle Sections
             document.getElementById('request-details-title').textContent = isPRI ? 'Request Details' : 'Request Information';
-            const calcSection = document.getElementById('pri-calculation-section');
             const actionButtons = document.getElementById('pri-action-buttons');
             const footerSaveWrap = document.getElementById('pri-footer-save-wrap');
 
             if (isPRI) {
+                actionButtons.classList.remove('hidden');
                 if (effectiveStatus === 'Complete') {
-                    calcSection.classList.add('hidden');
-                    actionButtons.classList.remove('hidden');
                     if (footerSaveWrap) footerSaveWrap.classList.add('hidden');
                 } else {
-                    calcSection.classList.remove('hidden');
-                    actionButtons.classList.remove('hidden');
                     if (footerSaveWrap) footerSaveWrap.classList.remove('hidden');
 
                     const saveBtn = document.getElementById('pri-save-btn');
                     const saveBtnBase =
                         'pri-modal-save-btn px-7 py-2.5 rounded-xl font-extrabold text-sm inline-flex items-center justify-center gap-2 shrink-0 shadow-md transition-all active:scale-95';
-                    saveBtn.setAttribute('aria-label', 'Save PRI details');
-                    saveBtn.innerHTML = '<i data-lucide="save" class="w-4 h-4 shrink-0" aria-hidden="true"></i><span class="pri-save-btn__label whitespace-nowrap">Save</span>';
+                    saveBtn.setAttribute('aria-label', 'Complete PRI');
+                    saveBtn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4 shrink-0" aria-hidden="true"></i><span class="pri-save-btn__label whitespace-nowrap">Complete & Save</span>';
                     saveBtn.className = saveBtnBase;
                 }
             } else {
-                calcSection.classList.add('hidden');
                 actionButtons.classList.remove('hidden');
                 if (footerSaveWrap) footerSaveWrap.classList.add('hidden');
             }
@@ -3181,72 +3111,17 @@
             const content = document.getElementById('request-details-content');
 
             if (isPRI && effectiveStatus === 'Complete') {
-                let detailsHtml = '';
-                const hasLines = state.priDetails && state.priDetails.length > 0 && state.priDetails.some(d => String(d.detail || '').trim() !== '');
-                if (hasLines) {
-                    detailsHtml = `
-            <div class="mt-6 border border-[#E9ECEF] rounded-xl overflow-hidden bg-white shadow-sm">
-                <div class="px-4 py-3 bg-[#EEF2FF] border-b border-[#E9ECEF] flex items-center justify-between">
-                    <span class="text-xs font-bold text-primary flex items-center gap-2">
-                        <i data-lucide="list-checks" class="w-4 h-4"></i>
-                        PRI calculation
-                    </span>
-                    <span class="text-xs font-bold text-primary bg-white px-2 py-1 rounded shadow-sm border border-primary/20">Total: ${item.total_minutes || 0} min</span>
-                </div>
-                <div class="divide-y divide-[#E9ECEF]">
-                    ${state.priDetails.map(d => `
-                    <div class="flex justify-between px-4 py-3 text-[13px]">
-                        <span class="text-[#495057] font-medium leading-relaxed pr-4">${d.detail || '—'}</span>
-                        <span class="text-[#212529] font-bold shrink-0">${d.minutes} min</span>
-                    </div>
-                    `).join('')}
-                </div>
-            </div>`;
-                } else {
-                    detailsHtml = `
-            <div class="mt-6 p-4 rounded-xl border border-dashed border-[#DEE2E6] bg-[#F8F9FA] text-[13px] text-[#6C757D] text-center">
-                No PRI line items on file.
-            </div>`;
-                }
-
                 content.innerHTML = `
             ${buildPriRequestDetailsCardHtml(item, { showPriExtras: true, statusValue: effectiveStatus })}
-            ${detailsHtml}
             ${buildPriDownloadButtonsHtml()}
         `;
             } else if (isPRI) {
-                // Awaiting PRI: detail card + editable calculation only (downloads after Save on success step)
                 content.innerHTML = `
             ${buildPriRequestDetailsCardHtml(item, { showPriExtras: false, statusValue: effectiveStatus })}
         `;
-                renderPRIDetailRows();
             } else {
-                // Calendar / non-PRI: same detail card + optional saved lines + downloads
-                let detailsHtml = '';
-                if (state.priDetails && state.priDetails.length > 0 && state.priDetails[0].detail.trim() !== '') {
-                    detailsHtml = `
-            <div class="mt-6 border border-[#E9ECEF] rounded-xl overflow-hidden bg-white shadow-sm">
-                <div class="px-4 py-3 bg-[#EEF2FF] border-b border-[#E9ECEF] flex items-center justify-between">
-                    <span class="text-xs font-bold text-primary flex items-center gap-2">
-                        <i data-lucide="list-checks" class="w-4 h-4"></i>
-                        Saved Details
-                    </span>
-                    <span class="text-xs font-bold text-primary bg-white px-2 py-1 rounded shadow-sm border border-primary/20">Total: ${item.total_minutes || 0} min</span>
-                </div>
-                <div class="divide-y divide-[#E9ECEF]">
-                    ${state.priDetails.map(d => `
-                    <div class="flex justify-between px-4 py-3 text-[13px]">
-                        <span class="text-[#495057] font-medium leading-relaxed pr-4">${d.detail}</span>
-                        <span class="text-[#212529] font-bold shrink-0">${d.minutes} min</span>
-                    </div>
-                    `).join('')}
-                </div>
-            </div>`;
-                }
-
                 content.innerHTML = `
             ${buildPriRequestDetailsCardHtml(item, { showPriExtras: false, statusValue: getEffectivePRIStatus(item) })}
-            ${detailsHtml}
             ${buildPriDownloadButtonsHtml()}
         `;
             }
@@ -3257,48 +3132,12 @@
             if (window.lucide) window.lucide.createIcons();
         }
 
-        function dismissPriSavedSuccess() {
-            toggleRequestDetails(false);
-            showToast('PRI details saved. You can open the request again anytime to export.', 'info');
-        }
+        function dismissPriSavedSuccess() { }
 
-        function renderPRIDetailRows() {
-            const container = document.getElementById('pri-calculation-rows');
-            const totalDisplay = document.getElementById('pri-details-total');
-
-            container.innerHTML = state.priDetails.map((d, i) => `
-        <div class="flex items-center gap-2 group">
-            <div class="flex-1 grid grid-cols-12 gap-2">
-                <input type="text" placeholder="Detail" class="col-span-8 px-2 py-1.5 border border-[#DEE2E6] rounded-md text-[12px] focus:ring-1 focus:ring-primary outline-none" value="${d.detail}" oninput="updatePRIDetailRow(${i}, 'detail', this.value)">
-                <input type="number" placeholder="Min" class="col-span-4 px-2 py-1.5 border border-[#DEE2E6] rounded-md text-[12px] focus:ring-1 focus:ring-primary outline-none text-right" value="${d.minutes || ''}" oninput="updatePRIDetailRow(${i}, 'minutes', this.value)">
-            </div>
-            <button onclick="removePRIDetailRow(${i})" class="p-1 text-[#ADB5BD] hover:text-[#EF4444] transition-colors">
-                <i data-lucide="minus-circle" class="w-4 h-4"></i>
-            </button>
-        </div>
-    `).join('');
-
-            const total = state.priDetails.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
-            totalDisplay.textContent = total;
-            if (window.lucide) window.lucide.createIcons();
-        }
-
-        function addPRIDetailRow() {
-            state.priDetails.push({ detail: '', minutes: 0 });
-            renderPRIDetailRows();
-        }
-
-        function removePRIDetailRow(index) {
-            if (state.priDetails.length > 1) state.priDetails.splice(index, 1);
-            else state.priDetails = [{ detail: '', minutes: 0 }];
-            renderPRIDetailRows();
-        }
-
-        function updatePRIDetailRow(index, field, value) {
-            state.priDetails[index][field] = field === 'minutes' ? Number(value) : value;
-            const total = state.priDetails.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
-            document.getElementById('pri-details-total').textContent = total;
-        }
+        function updatePRIDetailRow(index, field, value) { }
+        function renderPRIDetailRows() { }
+        function addPRIDetailRow() { }
+        function removePRIDetailRow(index) { }
 
         async function savePRIDetails() {
             await saveAndExportPRI();
@@ -3322,256 +3161,9 @@
             }
         }
 
-        async function exportAndComplete(format) {
-            if (!state.selectedRequest) {
-                console.error('Export failed: No request selected');
-                return;
-            }
-
-            console.log(`Starting export and complete flow for format: ${format}`, state.selectedRequest.c_number);
-            setLoading(true);
-
-            try {
-                // 1. Export the file (Client-side download)
-                if (format === 'excel') {
-                    await exportToExcel();
-                } else {
-                    await exportToPDF();
-                }
-
-                // 2. Open SharePoint Folder
-                // Priority: item.folderlink (normalized from code.gs folderLink) > item.folder_path > default
-                const sharepointUrl = state.selectedRequest.folderlink || state.selectedRequest.folder_path || state.SHAREPOINT_URL;
-                console.log('Opening SharePoint:', sharepointUrl);
-                window.open(sharepointUrl, '_blank');
-
-                // 3. Automatically complete and save to Google Sheet
-                // This triggers handlePriSave_ in code.gs which also does server-side export to Drive
-                await savePRI(true);
-
-                // 4. Close modal and switch to Complete tab
-                toggleRequestDetails(false);
-                if (typeof setActiveTab === 'function') {
-                    setActiveTab('Complete');
-                }
-
-            } catch (error) {
-                console.error('Error exporting/completing:', error);
-                alert('An error occurred during export/completion: ' + error.message);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        async function exportToExcel() {
-            try {
-                const item = state.selectedRequest;
-                if (!item) throw new Error('No item selected');
-                const workbook = new ExcelJS.Workbook();
-                const worksheet = workbook.addWorksheet('PRI Report');
-
-                const fileName = `PRI_Report_${String(item.c_number || 'NA')}`;
-
-                // Header Info
-                const titleRow = worksheet.addRow(['Title:', item.title || item.pri_name || 'N/A', '', 'Date:', new Date().toLocaleDateString('en-GB')]);
-                const cNumberRow = worksheet.addRow(['C-Number:', String(item.c_number || 'N/A'), '', 'Customer:', item.customer || 'N/A']);
-                worksheet.addRow([]); // Spacer
-
-                // Style Header Info
-                [titleRow, cNumberRow].forEach(row => {
-                    row.getCell(1).font = { color: { argb: 'FF0000FF' }, bold: true };
-                    row.getCell(2).font = { bold: true };
-                    row.getCell(4).font = { color: { argb: 'FF0000FF' }, bold: true };
-                });
-
-                // Table Header
-                const headerRow = worksheet.addRow(['Details', '', 'Minutes']);
-                worksheet.mergeCells(`A${headerRow.number}:B${headerRow.number}`);
-                worksheet.mergeCells(`C${headerRow.number}:D${headerRow.number}`);
-
-                headerRow.eachCell(cell => {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF065F46' } };
-                    cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-                    cell.alignment = { horizontal: 'center' };
-                });
-
-                // Data Rows
-                let details = [];
-                try {
-                    details = typeof item.pri_details === 'string' ? JSON.parse(item.pri_details) : (item.pri_details || []);
-                    if (!Array.isArray(details)) details = [];
-                } catch (e) { details = []; }
-
-                details.forEach(d => {
-                    const row = worksheet.addRow([d.detail || '—', '', Number(d.minutes) || 0]);
-                    worksheet.mergeCells(`A${row.number}:B${row.number}`);
-                    worksheet.mergeCells(`C${row.number}:D${row.number}`);
-                    row.getCell(3).alignment = { horizontal: 'right' };
-                    row.eachCell(cell => {
-                        cell.border = {
-                            top: { style: 'thin' },
-                            left: { style: 'thin' },
-                            bottom: { style: 'thin' },
-                            right: { style: 'thin' }
-                        };
-                    });
-                });
-
-                // Total Row
-                worksheet.addRow([]);
-                const total = details.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
-                const totalRow = worksheet.addRow(['Total:', '', '', total]);
-                worksheet.mergeCells(`A${totalRow.number}:C${totalRow.number}`);
-                totalRow.getCell(1).font = { bold: true };
-                totalRow.getCell(4).font = { bold: true };
-                totalRow.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFE0' } }; // Light yellow
-                totalRow.getCell(4).alignment = { horizontal: 'right' };
-
-                // Column Widths
-                worksheet.getColumn(1).width = 20;
-                worksheet.getColumn(2).width = 40;
-                worksheet.getColumn(3).width = 10;
-                worksheet.getColumn(4).width = 15;
-
-                const buffer = await workbook.xlsx.writeBuffer();
-                saveAs(new Blob([buffer]), `${fileName}.xlsx`);
-            } catch (err) {
-                console.error('Excel export error:', err);
-                throw new Error('Excel download failed: ' + err.message);
-            }
-        }
-
-        async function exportTableToExcel() {
-            try {
-                const data = state.filteredData || [];
-                if (data.length === 0) {
-                    showToast('No data to export.', 'info');
-                    return;
-                }
-
-                const workbook = new ExcelJS.Workbook();
-                const worksheet = workbook.addWorksheet('PRI Dashboard Export');
-
-                // Header
-                const headers = ['C_Number', 'Title', 'Customer', 'Dept', 'Status', 'Total Minutes'];
-                const headerRow = worksheet.addRow(headers);
-                headerRow.eachCell(cell => {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
-                    cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-                    cell.alignment = { horizontal: 'center' };
-                });
-
-                // Rows
-                data.forEach(item => {
-                    worksheet.addRow([
-                        item.cNumber || '-',
-                        item.title || '-',
-                        item.customer || '-',
-                        item.dept || '-',
-                        item.badgeStatus || item.displayStatus || '-',
-                        Number(item.total_minutes) || 0
-                    ]);
-                });
-
-                // Styling
-                worksheet.getColumn(1).width = 15;
-                worksheet.getColumn(2).width = 30;
-                worksheet.getColumn(3).width = 20;
-                worksheet.getColumn(4).width = 15;
-                worksheet.getColumn(5).width = 15;
-                worksheet.getColumn(6).width = 15;
-
-                const fileName = `PRI_Dashboard_Export_${new Date().toISOString().split('T')[0]}`;
-                const buffer = await workbook.xlsx.writeBuffer();
-                saveAs(new Blob([buffer]), `${fileName}.xlsx`);
-                showToast('Export successful.', 'success');
-            } catch (err) {
-                console.error('Table export error:', err);
-                showToast('Export failed: ' + err.message, 'error');
-            }
-        }
-
-        async function exportToPDF() {
-            if (!state.selectedRequest) return;
-            const item = state.selectedRequest;
-
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-
-                // Header: PRI Calculation Report
-                doc.setFontSize(24);
-                doc.setTextColor(0, 0, 0);
-                doc.setFont(undefined, 'bold');
-                doc.text('PRI Calculation Report', 14, 25);
-
-                // Header Info
-                doc.setFontSize(11);
-                doc.setTextColor(33, 37, 41);
-                doc.setFont(undefined, 'normal');
-
-                // Left Column
-                doc.setTextColor(0, 0, 255);
-                doc.text('Title:', 14, 40);
-                doc.setTextColor(0, 0, 0);
-                doc.setFont(undefined, 'bold');
-                doc.text(item.title || 'N/A', 30, 40);
-
-                doc.setFont(undefined, 'normal');
-                doc.setTextColor(0, 0, 255);
-                doc.text('C-Number:', 14, 48);
-                doc.setTextColor(0, 0, 0);
-                doc.setFont(undefined, 'bold');
-                doc.text(String(item.c_number || 'N/A'), 35, 48);
-
-                // Right Column
-                doc.setFont(undefined, 'normal');
-                doc.setTextColor(0, 0, 255);
-                doc.text('Date:', 140, 40);
-                doc.setTextColor(0, 0, 0);
-                doc.text(new Date().toLocaleDateString('en-GB'), 155, 40);
-
-                doc.setFont(undefined, 'normal');
-                doc.setTextColor(0, 0, 255);
-                doc.text('Customer:', 140, 48);
-                doc.setTextColor(0, 0, 0);
-                doc.text(item.customer || 'N/A', 160, 48);
-
-                // Table
-                const details = typeof item.pri_details === 'string' ? JSON.parse(item.pri_details) : (item.pri_details || []);
-                const tableData = details.map(d => [d.detail, d.minutes]);
-                const total = details.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
-
-                doc.autoTable({
-                    startY: 60,
-                    head: [['Details', 'Minutes']],
-                    body: tableData,
-                    theme: 'grid',
-                    headStyles: { fillColor: [6, 95, 70], textColor: [255, 255, 255], fontStyle: 'bold' },
-                    styles: { fontSize: 10, cellPadding: 5 },
-                    columnStyles: {
-                        0: { cellWidth: 'auto' },
-                        1: { cellWidth: 30, halign: 'right' }
-                    },
-                    margin: { left: 14, right: 14 }
-                });
-
-                // Footer with total
-                const finalY = doc.lastAutoTable.finalY;
-                doc.setFillColor(255, 255, 224); // Light yellow
-                doc.rect(14, finalY, 182, 10, 'F');
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.setTextColor(0, 0, 0);
-                doc.text('Total Minutes:', 140, finalY + 7);
-                doc.text(total.toString(), 185, finalY + 7, { align: 'right' });
-
-                doc.save(`PRI_Report_${String(item.c_number || 'NA')}.pdf`);
-            } catch (error) {
-                console.error('Error generating PDF:', error);
-                throw new Error('PDF generation failed: ' + error.message);
-            }
-        }
+        async function exportAndComplete(format) { }
+        async function exportToExcel() { }
+        async function exportToPDF() { }
 
         function openDayDetails() {
             // Calendar day details is handled by the vanilla-style calendar-day-modal.
@@ -3688,7 +3280,7 @@
                 `;
             }
 
-            const total = state.priDetails.reduce((sum, d) => sum + (Number(d.minutes) || 0), 0);
+            const total = Number(state.selectedRequest.totalminutes || state.selectedRequest.total_minutes || 0);
             const newStatus = shouldComplete ? 'Complete' : state.selectedRequest.status;
             const now = new Date();
             const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
@@ -3697,8 +3289,6 @@
                 ...state.selectedRequest,
                 requestId: state.selectedRequest.cnumber || state.selectedRequest.c_number || state.selectedRequest.id,
                 status: newStatus,
-                pridetails: JSON.stringify(state.priDetails),
-                pri_details: JSON.stringify(state.priDetails),
                 totalminutes: total,
                 total_minutes: total,
                 completedat: shouldComplete ? now.toISOString() : (state.selectedRequest.completedat || ''),
@@ -3719,21 +3309,25 @@
                 const payload = {
                     action: 'save',
                     data: dataToSave,
-                    create_excel: shouldComplete, // Enable server-side Drive export on completion
+                    create_excel: false, // Disabled as requested
                     email_notification: {
                         enabled: sendCompletionEmail,
                         recipient: recipientEmail,
                         subject: shouldComplete ? `PRI Request Complete: ${state.selectedRequest.c_number}` : `PRI Details Saved: ${state.selectedRequest.c_number}`,
                         message: shouldComplete ?
-                            `The PRI request for ${state.selectedRequest.c_number} has been completed.\n\nDetails:\n- Title: ${state.selectedRequest.title || state.selectedRequest.pri_name || 'N/A'}\n- Request ID: ${state.selectedRequest.c_number}\n- Customer: ${state.selectedRequest.customer}\n- Department: ${state.selectedRequest.cust_dept}\n- Total Minutes: ${total}\n- Status: Complete\n\nFiles have been uploaded to SharePoint.` :
+                            `The PRI request for ${state.selectedRequest.c_number} has been completed.\n\nDetails:\n- Title: ${state.selectedRequest.title || state.selectedRequest.pri_name || 'N/A'}\n- Request ID: ${state.selectedRequest.c_number}\n- Customer: ${state.selectedRequest.customer}\n- Department: ${state.selectedRequest.cust_dept}\n- Total Minutes: ${total}\n- Status: Complete` :
                             `The PRI request for ${state.selectedRequest.c_number} has been saved.`
                     }
                 };
 
                 console.log('Sending payload to backend:', payload);
 
-                // Use 'cors' if possible for better error reporting, fallback to 'no-cors' if needed
-                await fetch(state.GOOGLE_SHEET_URL, {
+                let saveUrl = state.GOOGLE_SHEET_URL;
+                if (!saveUrl.includes('sheet=')) {
+                    saveUrl = `${saveUrl}${saveUrl.includes('?') ? '&' : '?'}sheet=PRI`;
+                }
+
+                await fetch(saveUrl, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: {
@@ -3753,8 +3347,6 @@
                     state.data[index] = {
                         ...state.data[index],
                         status: newStatus,
-                        pri_details: [...state.priDetails],
-                        pridetails: [...state.priDetails],
                         totalminutes: total,
                         total_minutes: total,
                         completedat: dataToSave.completedat,
@@ -3811,25 +3403,13 @@
             }
         }
 
-        // Save first, then hide PRI form and show export success step (same overlay)
         async function saveAndExportPRI() {
-            if (!state.selectedRequest) {
-                console.error('Save failed: No request selected');
-                return;
+            if (!state.selectedRequest) return;
+            const folderUrl = buildPriFolderUrl(state.selectedRequest);
+            const ok = await savePRI(true, { closeModal: true, skipToast: false });
+            if (ok) {
+                window.open(folderUrl, '_blank');
             }
-            const ok = await savePRI(true, { closeModal: false, skipToast: true, notifyRequester: false });
-            if (!ok) return;
-
-            const mainView = document.getElementById('request-details-main-view');
-            const successView = document.getElementById('request-details-success-view');
-            if (mainView) {
-                mainView.classList.add('pri-modal-main--hidden');
-            }
-            if (successView) {
-                successView.classList.remove('hidden');
-                successView.classList.add('pri-modal-success--visible');
-            }
-            if (window.lucide) window.lucide.createIcons();
         }
 
     </script>
