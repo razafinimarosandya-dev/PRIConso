@@ -3398,6 +3398,14 @@
             }
         }
 
+        async function exportAndComplete(format) {
+            // Implementation if needed, or at least define it to avoid errors
+            const ok = await savePRI(true, { closeModal: true });
+            if (ok) {
+                showToast(`Request completed and saved.`, 'success');
+            }
+        }
+
         function exportTableToExcel() {
             const dataToExport = state.filteredData && state.filteredData.length > 0 ? state.filteredData : state.data;
             if (!dataToExport || dataToExport.length === 0) {
