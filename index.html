@@ -1814,7 +1814,7 @@
             selectedFileUrl: null,
             isSaved: true,
             currentCalendarDate: new Date(),
-            GOOGLE_SHEET_URL: localStorage.getItem('PRI_DASHBOARD_URL') || 'https://script.google.com/macros/s/AKfycbzSdyx3uNKZPhbhwg_eIc_VmRTvUNF8-Q5z9hunbr7seSuz2nNdO-awDI8qserEQHkr/exec?sheet=PRI',
+            GOOGLE_SHEET_URL: localStorage.getItem('PRI_DASHBOARD_URL') || 'https://script.google.com/macros/s/AKfycbxZ4f9sdtoTb2Ps0E5Q8NX1FV7qhfJXEx-AzazDqZLfsnkfKhV3xqEMBPVGdTYuWh8TSg/exec?sheet=PRI',
             SHAREPOINT_URL: localStorage.getItem('SHAREPOINT_URL') || 'https://tklmu.sharepoint.com/sites/NewEraUSA/PNG/Forms/AllItems.aspx?id=%2Fsites%2FNewEraUSA%2FPNG%2FTesting&viewid=6536443e%2D10df%2D4c19%2D92e8%2Dfde89c026737'
         };
         let calCurrentDate = new Date();
@@ -2029,7 +2029,7 @@
             let effectiveStatus = getPriSheetStatus(item);
 
             // If backend has a completion timestamp, treat as complete for UI consistency.
-            if (item.completed_at) effectiveStatus = 'Complete';
+            if (item.completed_at || item.completedat) effectiveStatus = 'Complete';
 
             // Overdue logic (only applies to awaiting items).
             const plDate = pickPlUploadedDate(item);
@@ -2132,7 +2132,8 @@
             inner += rowPlain('PL Name', plNm || '—');
 
             if (showPriExtras) {
-                inner += rowPlain('Total Minutes', item.total_minutes != null ? String(item.total_minutes) : '0');
+                const tm = item.totalminutes ?? item.total_minutes;
+                inner += rowPlain('Total Minutes', tm != null ? String(tm) : '0');
             }
 
             inner += rowStatus('Status', status);
@@ -2177,7 +2178,7 @@
                 return rawStatus === 'Awaiting PRI';
             }
             if (activeTab === 'Complete') {
-                return rawStatus === 'Complete' || Boolean(item?.completed_at);
+                return rawStatus === 'Complete' || Boolean(item?.completed_at) || Boolean(item?.completedat);
             }
             return effectiveStatus === activeTab;
         }
@@ -2187,7 +2188,7 @@
         function getCalendarRecordDate(item) {
             if (!item || typeof item !== 'object') return null;
             // The user wants to see completed items based on PRI_Uploaded_Date
-            const raw = item.pri_uploaded_date || item.completed_at || item.pri_last_saved_at;
+            const raw = item.priuploadeddate || item.pri_uploaded_date || item.completedat || item.completed_at || item.prilastsavedat || item.pri_last_saved_at;
             const d = parseDateString(raw);
             return d && !isNaN(d.getTime()) ? d : null;
         }
@@ -2236,7 +2237,7 @@
             setError(null);
 
             try {
-                const FALLBACK_GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxMVYOSwIwbUchXuqOeH_r5h7Zxu1AWH4WkvxGHciuVYz1a-N2OOrtagBqCbTyRSgdjHA/exec?sheet=PRI';
+                const FALLBACK_GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxZ4f9sdtoTb2Ps0E5Q8NX1FV7qhfJXEx-AzazDqZLfsnkfKhV3xqEMBPVGdTYuWh8TSg/exec?sheet=PRI';
                 let baseUrl = state.GOOGLE_SHEET_URL.trim();
                 // Ensure we always request the merged PRI dataset.
                 if (!baseUrl.includes('sheet=')) {
@@ -2273,21 +2274,20 @@
                         let processed = { ...item };
                         // Normalize keys from Google Sheet (e.g., "PRI_Name" -> "pri_name")
                         Object.keys(item).forEach(key => {
-                            const normalizedKey = key.toLowerCase().replace(/\s+/g, '_');
+                            const normalizedKey = key.toLowerCase().replace(/[\s_\-]/g, '');
                             processed[normalizedKey] = item[key];
                         });
-                        // Ensure c_number is available from common aliases
-                        const idCandidate = processed.c_number
-                            || processed.c_number_
-                            || processed.c_no
-                            || processed.request_id
+                        // Ensure cnumber is available from common aliases
+                        const idCandidate = processed.cnumber
+                            || processed.c_number
                             || processed.requestid
                             || processed.id
-                            || processed.C_Number
-                            || processed['C_Number'];
+                            || item['C_Number']
+                            || item['c_number'];
                         if (idCandidate) {
-                            processed.c_number = String(idCandidate).trim();
-                            processed.C_Number = processed.c_number;
+                            processed.cnumber = String(idCandidate).trim();
+                            processed.c_number = processed.cnumber;
+                            processed.C_Number = processed.cnumber;
                         }
 
                         if (!processed.created_by) processed.created_by = item['Created By'] || item['created by'] || item['Creator'] || item['creator'];
@@ -2296,15 +2296,17 @@
                                 // Not a JSON string, keep as is
                             }
                         }
-                        if (typeof processed.pri_details === 'string' && processed.pri_details.trim() !== '') {
-                            try { processed.pri_details = JSON.parse(processed.pri_details); } catch (e) {
-                                // Not a JSON string, keep as is
-                            }
+                        if (typeof processed.pridetails === 'string' && processed.pridetails.trim() !== '') {
+                            try { processed.pridetails = JSON.parse(processed.pridetails); } catch (e) { }
                         }
+                        // Compatibility fallback
+                        if (processed.pridetails && !processed.pri_details) processed.pri_details = processed.pridetails;
+                        if (processed.pri_details && !processed.pridetails) processed.pridetails = processed.pri_details;
+
                         // Prevent reverting "Complete" status if it was recently set locally
-                        const processedId = String(processed.c_number || processed.id || processed.request_id || '').trim();
+                        const processedId = String(processed.cnumber || processed.id || '').trim();
                         const localItem = processedId
-                            ? state.data.find(d => String(d?.c_number || d?.id || d?.request_id || '').trim() === processedId)
+                            ? state.data.find(d => String(d?.cnumber || d?.id || '').trim() === processedId)
                             : null;
                         if (localItem && localItem.status === 'Complete' && processed.status === 'Awaiting PRI') {
                             // Check if it was completed in the last 60 seconds
@@ -3517,13 +3519,15 @@
 
             const dataToSave = {
                 ...state.selectedRequest,
-                requestId: state.selectedRequest.c_number || state.selectedRequest.id || state.selectedRequest.requestId,
+                requestId: state.selectedRequest.cnumber || state.selectedRequest.c_number || state.selectedRequest.id,
                 status: newStatus,
+                pridetails: JSON.stringify(state.priDetails),
                 pri_details: JSON.stringify(state.priDetails),
+                totalminutes: total,
                 total_minutes: total,
-                completed_at: shouldComplete ? now.toISOString() : (state.selectedRequest.completed_at || ''),
-                pri_uploaded_date: (shouldComplete || !state.selectedRequest.pri_uploaded_date) ? formattedDate : state.selectedRequest.pri_uploaded_date,
-                pri_last_saved_at: now.toISOString()
+                completedat: shouldComplete ? now.toISOString() : (state.selectedRequest.completedat || ''),
+                priuploadeddate: (shouldComplete || !state.selectedRequest.priuploadeddate) ? formattedDate : state.selectedRequest.priuploadeddate,
+                prilastsavedat: now.toISOString()
             };
 
             // Clean up for People Chip compatibility but KEEP created_by for identification if needed
@@ -3574,10 +3578,15 @@
                         ...state.data[index],
                         status: newStatus,
                         pri_details: [...state.priDetails],
+                        pridetails: [...state.priDetails],
+                        totalminutes: total,
                         total_minutes: total,
-                        completed_at: dataToSave.completed_at,
-                        pri_uploaded_date: dataToSave.pri_uploaded_date,
-                        pri_last_saved_at: dataToSave.pri_last_saved_at
+                        completedat: dataToSave.completedat,
+                        completed_at: dataToSave.completedat,
+                        priuploadeddate: dataToSave.priuploadeddate,
+                        pri_uploaded_date: dataToSave.priuploadeddate,
+                        prilastsavedat: dataToSave.prilastsavedat,
+                        pri_last_saved_at: dataToSave.prilastsavedat
                     };
                     state.selectedRequest = state.data[index];
                     console.log('Local state updated successfully');
