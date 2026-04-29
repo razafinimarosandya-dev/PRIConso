@@ -2494,8 +2494,8 @@
         /** Date used to place a row on the calendar (PRI Uploaded Date for completed items). */
         function getCalendarRecordDate(item) {
             if (!item || typeof item !== 'object') return null;
-            // The user wants to see completed items based on PRI_Uploaded_Date
-            const raw = item.priuploadeddate || item.pri_uploaded_date || item.completedat || item.completed_at || item.prilastsavedat || item.pri_last_saved_at;
+            // The user wants to see items plotted on the calendar strictly based on PRI_Uploaded_Date
+            const raw = item.priuploadeddate || item.pri_uploaded_date || item.PRI_Uploaded_Date;
             const d = parseDateString(raw);
             return d && !isNaN(d.getTime()) ? d : null;
         }
